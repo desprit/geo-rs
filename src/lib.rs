@@ -58,6 +58,7 @@ impl Location {
 pub struct Parser {
     countries: HashMap<String, String>,
     states: HashMap<String, HashMap<String, String>>,
+    cities: HashMap<String, HashMap<String, String>>,
 }
 
 impl Parser {
@@ -67,6 +68,10 @@ impl Parser {
             states: match country {
                 Some(c) => utils::read_country_data(&c, "states"),
                 None => utils::read_all_countries("states"),
+            },
+            cities: match country {
+                Some(c) => utils::read_country_data(&c, "cities"),
+                None => utils::read_all_countries("cities"),
             },
         }
     }

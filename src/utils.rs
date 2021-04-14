@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
 /// Read data from a given path and return as a HashMap
@@ -23,6 +23,13 @@ pub fn read_file(filename: &str) -> HashMap<String, String> {
         }
     }
     data
+}
+
+pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
+    let data_path = format!("{}/src/data", env!("CARGO_MANIFEST_DIR"));
+    let file_path = Path::new(&data_path).join(&filename);
+    let file = File::open(file_path).unwrap();
+    io::BufReader::new(file).lines()
 }
 
 /// Read specific type of GEO data for a given country from file

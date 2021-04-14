@@ -1,4 +1,6 @@
+use crate::utils;
 use crate::Parser;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct State {
@@ -21,6 +23,44 @@ impl Parser {
     }
 }
 
+#[derive(Debug)]
+pub struct CountryStates {
+    code_to_name: HashMap<String, String>,
+    name_to_code: HashMap<String, String>,
+}
+
+/// Read US and CA states GEO data and create a map between
+/// state names and state abbreviations and vice-versa.
+///
+/// # Examples
+///
+/// ```
+/// let states = read_states();
+/// ```
+pub fn read_states() -> HashMap<String, CountryStates> {
+    let mut data: HashMap<String, CountryStates> = HashMap::new();
+    for country in ["US", "CA"].iter() {
+        let filename = format!("{}/{}.txt", &country, "states");
+        let mut name_to_code: HashMap<String, String> = HashMap::new();
+        let mut code_to_name: HashMap<String, String> = HashMap::new();
+        for line in utils::read_lines(&filename) {
+            if let Ok(s) = line {
+                let parts: Vec<&str> = s.split(";").collect();
+                name_to_code.insert(parts[1].to_string(), parts[0].to_string());
+                code_to_name.insert(parts[0].to_string(), parts[1].to_string());
+            }
+        }
+        data.insert(
+            country.to_string(),
+            CountryStates {
+                name_to_code,
+                code_to_name,
+            },
+        );
+    }
+    data
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Parser;
@@ -35,5 +75,18 @@ mod tests {
                 code: "ON".into()
             })
         );
+    }
+
+    #[test]
+    fn test_read_states() {
+        let states = super::read_states();
+        assert!(states.get("US").is_some());
+        assert!(states.get("CA").is_some());
+        let us_states = states.get("US").unwrap();
+        let ca_states = states.get("CA").unwrap();
+        assert!(ca_states.code_to_name.get("ON").is_some());
+        assert!(ca_states.name_to_code.get("Ontario").is_some());
+        assert!(us_states.code_to_name.get("CA").is_some());
+        assert!(us_states.name_to_code.get("California").is_some());
     }
 }
