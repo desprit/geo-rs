@@ -1,15 +1,16 @@
 #![allow(dead_code)]
 mod nodes;
 mod utils;
-use nodes::Country;
-use std::collections::HashMap;
+use nodes::{
+    read_cities, read_countries, read_states, CountriesMap, Country, CountryCities, CountryStates,
+};
 
 #[derive(Debug)]
 pub struct Location {
     city: Option<String>,
     state: Option<String>,
     country: Option<Country>,
-    zipcode: Option<String>,
+    zipcode: Option<nodes::Zipcode>,
     address: Option<String>,
 }
 
@@ -40,7 +41,7 @@ impl Location {
         }
         if let Some(zipcode) = &self.zipcode {
             as_string.push_str(", ");
-            as_string.push_str(zipcode.as_str());
+            as_string.push_str(zipcode.zipcode.as_str());
         }
         if let Some(address) = &self.address {
             as_string.push_str(", ");
@@ -56,32 +57,37 @@ impl Location {
 
 #[derive(Debug)]
 pub struct Parser {
-    countries: HashMap<String, String>,
-    states: HashMap<String, HashMap<String, String>>,
-    cities: HashMap<String, HashMap<String, String>>,
+    countries: CountriesMap,
+    states: CountryStates,
+    cities: CountryCities,
 }
 
 impl Parser {
     fn new(country: Option<&str>) -> Self {
         Self {
-            countries: utils::read_file("countries.txt"),
-            states: match country {
-                Some(c) => utils::read_country_data(&c, "states"),
-                None => utils::read_all_countries("states"),
-            },
-            cities: match country {
-                Some(c) => utils::read_country_data(&c, "cities"),
-                None => utils::read_all_countries("cities"),
-            },
+            countries: read_countries(),
+            states: read_states(),
+            cities: read_cities(),
         }
     }
 
     pub fn parse_location(&self, s: &str) -> Location {
+        let mut remainder = s.to_string();
+        let zipcode = self.find_zipcode(&s);
+        if let Some(z) = zipcode.as_ref() {
+            remainder = self.remove_zipcode(&mut remainder, &z);
+        }
+        println!("After removing zipcode: {}", remainder);
+        let country = self.find_country(&s);
+        if let Some(c) = country.as_ref() {
+            remainder = self.remove_country(&mut remainder, &c);
+        }
+        println!("After removing country: {}", remainder);
         Location {
             city: None,
             state: None,
-            country: self.parse_country(s),
-            zipcode: None,
+            country,
+            zipcode,
             address: None,
         }
     }
@@ -129,15 +135,15 @@ mod tests {
         super::Parser::new(None);
     }
 
-    #[test]
-    fn test_format_location() {
-        let parser = super::Parser::new(None);
-        for k in LOCATIONS.keys() {
-            let location = parser.parse_location(&k);
-            assert_eq!(
-                location.to_string(),
-                Some("Pune Maharashtra, IN".to_string())
-            )
-        }
-    }
+    // #[test]
+    // fn test_format_location() {
+    //     let parser = super::Parser::new(None);
+    //     for k in LOCATIONS.keys() {
+    //         let location = parser.parse_location(&k);
+    //         assert_eq!(
+    //             location.to_string(),
+    //             Some("Pune Maharashtra, IN".to_string())
+    //         )
+    //     }
+    // }
 }

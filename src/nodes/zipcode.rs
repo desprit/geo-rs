@@ -1,3 +1,4 @@
+use crate::utils;
 use crate::Parser;
 use regex::Regex;
 
@@ -18,20 +19,36 @@ impl PartialEq for Zipcode {
 }
 
 impl Parser {
+    pub fn remove_zipcode(&self, s: &mut String, zipcode: &Zipcode) -> String {
+        utils::clean(s);
+        s.to_owned()
+    }
+
     pub fn find_zipcode(&self, s: &str) -> Option<Zipcode> {
         let us_regex = Regex::new(US_PATTERN).unwrap();
         let ca_regex = Regex::new(CA_PATTERN).unwrap();
-        if let Some(m) = us_regex.find(&s) {
-            return Some(Zipcode {
-                zipcode: s[m.start()..m.end()].replace(" ", "").to_string(),
-                country: String::from("US"),
-            });
-        }
         if let Some(m) = ca_regex.find(&s) {
             return Some(Zipcode {
                 zipcode: s[m.start()..m.end()].replace(" ", "").to_string(),
                 country: String::from("CA"),
             });
+        }
+        for part in utils::split(&s) {
+            let has_correct_len = vec![5, 9, 10].contains(&part.chars().count());
+            let has_correct_chars = &part.chars().all(|c| {
+                c.is_numeric()
+                    || c.to_string() == "-".to_string()
+                    || c.to_string() == " ".to_string()
+            });
+            if !has_correct_len || !has_correct_chars {
+                continue;
+            }
+            if let Some(m) = us_regex.find(&s) {
+                return Some(Zipcode {
+                    zipcode: s[m.start()..m.end()].replace(" ", "").to_string(),
+                    country: String::from("US"),
+                });
+            }
         }
         None
     }
@@ -39,8 +56,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use super::{Regex, Zipcode, CA_PATTERN, US_PATTERN};
-    use crate::Parser;
+    use super::*;
     use std::collections::HashMap;
 
     #[test]
@@ -68,6 +84,7 @@ mod tests {
             }),
         );
         zipcodes.insert("Lansing, MI, US", None);
+        zipcodes.insert("Lansing, MI, US, 67139037", None);
         let parser = Parser::new(None);
         for (k, v) in zipcodes {
             let zipcode = parser.find_zipcode(&k);

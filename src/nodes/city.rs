@@ -24,10 +24,12 @@ impl Parser {
 }
 
 #[derive(Debug)]
-pub struct CountryCities {
-    cities_by_state: HashMap<String, Vec<String>>,
-    state_of_city: HashMap<String, String>,
+pub struct CitiesMap {
+    pub cities_by_state: HashMap<String, Vec<String>>,
+    pub state_of_city: HashMap<String, String>,
 }
+
+pub type CountryCities = HashMap<String, CitiesMap>;
 
 /// Read US and CA states GEO data and create a map between
 /// state names and state abbreviations and vice-versa.
@@ -37,8 +39,8 @@ pub struct CountryCities {
 /// ```
 /// let states = read_states();
 /// ```
-pub fn read_cities() -> HashMap<String, CountryCities> {
-    let mut data: HashMap<String, CountryCities> = HashMap::new();
+pub fn read_cities() -> HashMap<String, CitiesMap> {
+    let mut data: HashMap<String, CitiesMap> = HashMap::new();
     for country in ["US", "CA"].iter() {
         let filename = format!("{}/{}.txt", &country, "cities");
         let mut cities_by_state: HashMap<String, Vec<String>> = HashMap::new();
@@ -59,7 +61,7 @@ pub fn read_cities() -> HashMap<String, CountryCities> {
         }
         data.insert(
             country.to_string(),
-            CountryCities {
+            CitiesMap {
                 cities_by_state,
                 state_of_city,
             },

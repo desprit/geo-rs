@@ -1,14 +1,23 @@
+use regex::Regex;
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
+const RE_BRACKETS: &str = r"\(.*?\)";
+const RE_LEADING: &str = r"^[\s\-,;:_\.\?!/]*";
+const RE_TRAILING: &str = r"[\s\-,;:_\.\?!/]*$";
+const RE_SPLITTER1: &str = r"[^a-zA-Z0-9\s]";
+const RE_SPLITTER2: &str = r"[^a-zA-Z0-9]";
+const RE_SPACES: &str = r"\s+";
+
 /// Read data from a given path and return as a HashMap
 ///
 /// # Examples
 ///
 /// ```
+/// use crate::utils::read_data;
 /// let countries = read_data("countries.txt")
 /// ```
 pub fn read_file(filename: &str) -> HashMap<String, String> {
@@ -42,6 +51,7 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// # Examples
 ///
 /// ```
+/// use crate::utils::read_country_data;
 /// read_country_data("US", "states");
 /// ```
 pub fn read_country_data(
@@ -63,6 +73,7 @@ pub fn read_country_data(
 /// # Examples
 ///
 /// ```
+/// use crate::utils::read_all_countries;
 /// read_all_countries("cities");
 /// ```
 pub fn read_all_countries(filename: &str) -> HashMap<String, HashMap<String, String>> {
@@ -81,8 +92,50 @@ pub fn read_all_countries(filename: &str) -> HashMap<String, HashMap<String, Str
     data
 }
 
+/// Remove useless garbage from the given string, e.g. trailing commas, values in brackets, etc.
+///
+/// # Examples
+///
+/// ```
+/// let mut s = "!(#3)Toronto ,".to_string();
+/// clean(&mut s);
+/// assert_eq!(s, "Toronto".to_string());
+/// ```
+pub fn clean(s: &mut String) {
+    *s = Regex::new(RE_BRACKETS)
+        .unwrap()
+        .replace_all(&s, "")
+        .to_string();
+    *s = Regex::new(RE_LEADING)
+        .unwrap()
+        .replace_all(&s, "")
+        .to_string();
+    *s = Regex::new(RE_TRAILING)
+        .unwrap()
+        .replace_all(&s, "")
+        .to_string();
+    *s = Regex::new(RE_SPLITTER1)
+        .unwrap()
+        .split(&s)
+        .filter(|&x| !x.is_empty())
+        .collect::<Vec<&str>>()
+        .join(", ");
+    *s = Regex::new(RE_SPACES)
+        .unwrap()
+        .replace_all(&s, " ")
+        .to_string();
+    *s = s.replace(",,", "").replace(", , ", ", ");
+}
+
+pub fn split(s: &str) -> Vec<&str> {
+    let split_regex = Regex::new(RE_SPLITTER2).unwrap();
+    split_regex.split(&s).filter(|&x| !x.is_empty()).collect()
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn test_read_data_should_work() {
         let countries = super::read_file("countries.txt");
@@ -103,5 +156,31 @@ mod tests {
         assert_eq!(ca_states.get("ON"), Some(&String::from("Ontario")));
         let us_states = states.get("US").unwrap();
         assert_eq!(us_states.get("CA"), Some(&String::from("California")));
+    }
+
+    #[test]
+    fn test_clean() {
+        let mut s = "canada,".to_string();
+        clean(&mut s);
+        assert_eq!(s, "canada".to_string());
+        s = "!--?(invalid)Toronto/".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Toronto".to_string());
+    }
+
+    #[test]
+    fn test_split() {
+        let s = "s - s !! test";
+        let parts = split(&s);
+        assert_eq!(parts, vec!["s", "s", "test"])
+    }
+
+    #[test]
+    fn test_regex_patterns_can_compile() {
+        Regex::new(RE_BRACKETS).unwrap();
+        Regex::new(RE_LEADING).unwrap();
+        Regex::new(RE_TRAILING).unwrap();
+        Regex::new(RE_SPLITTER1).unwrap();
+        Regex::new(RE_SPLITTER2).unwrap();
     }
 }

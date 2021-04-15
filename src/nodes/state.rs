@@ -24,10 +24,12 @@ impl Parser {
 }
 
 #[derive(Debug)]
-pub struct CountryStates {
-    code_to_name: HashMap<String, String>,
-    name_to_code: HashMap<String, String>,
+pub struct StatesMap {
+    pub code_to_name: HashMap<String, String>,
+    pub name_to_code: HashMap<String, String>,
 }
+
+pub type CountryStates = HashMap<String, StatesMap>;
 
 /// Read US and CA states GEO data and create a map between
 /// state names and state abbreviations and vice-versa.
@@ -35,10 +37,11 @@ pub struct CountryStates {
 /// # Examples
 ///
 /// ```
+/// use crate::nodes::read_states;
 /// let states = read_states();
 /// ```
-pub fn read_states() -> HashMap<String, CountryStates> {
-    let mut data: HashMap<String, CountryStates> = HashMap::new();
+pub fn read_states() -> HashMap<String, StatesMap> {
+    let mut data: HashMap<String, StatesMap> = HashMap::new();
     for country in ["US", "CA"].iter() {
         let filename = format!("{}/{}.txt", &country, "states");
         let mut name_to_code: HashMap<String, String> = HashMap::new();
@@ -52,7 +55,7 @@ pub fn read_states() -> HashMap<String, CountryStates> {
         }
         data.insert(
             country.to_string(),
-            CountryStates {
+            StatesMap {
                 name_to_code,
                 code_to_name,
             },
