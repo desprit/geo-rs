@@ -63,7 +63,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             countries: read_countries(),
             states: read_states(),
