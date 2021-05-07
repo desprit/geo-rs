@@ -26,7 +26,7 @@ impl PartialEq for Location {
 }
 
 impl Location {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let mut as_string = String::new();
         if let Some(city) = &self.city {
             as_string.push_str(", ");
