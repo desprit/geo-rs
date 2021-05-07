@@ -8,11 +8,11 @@ use nodes::{
 
 #[derive(Debug, Clone, Hash, Eq)]
 pub struct Location {
-    city: Option<City>,
-    state: Option<State>,
-    country: Option<Country>,
-    zipcode: Option<Zipcode>,
-    address: Option<Address>,
+    pub city: Option<City>,
+    pub state: Option<State>,
+    pub country: Option<Country>,
+    pub zipcode: Option<Zipcode>,
+    pub address: Option<Address>,
 }
 
 impl PartialEq for Location {
