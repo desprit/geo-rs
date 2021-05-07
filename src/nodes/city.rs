@@ -1,8 +1,9 @@
 use crate::utils;
-use crate::Parser;
+use crate::{Country, Parser, State};
 use std::collections::HashMap;
+use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq)]
 pub struct City {
     pub name: String,
     pub state: Option<String>,
@@ -14,12 +15,68 @@ impl PartialEq for City {
     }
 }
 
+impl fmt::Display for City {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name.trim())
+    }
+}
+
 impl Parser {
-    pub fn parse_city(&self, s: &str) -> Option<City> {
-        Some(City {
-            name: String::from("Toronto"),
-            state: Some(String::from("ON")),
-        })
+    pub fn remove_city(&self, s: &mut String, city: &City) {
+        *s = s.replace(&city.name, "");
+        utils::clean(s);
+    }
+
+    pub fn find_special_case_city(&self, s: &str) -> Option<City> {
+        if s.to_lowercase().contains("district of columbia") {
+            return Some(City {
+                name: String::from("Washington"),
+                state: Some(String::from("DC")),
+            });
+        }
+        if s.to_lowercase().contains("d.c.") {
+            return Some(City {
+                name: String::from("Washington"),
+                state: Some(String::from("DC")),
+            });
+        }
+        None
+    }
+
+    pub fn find_city(&self, s: &str, state: &State, country: &Option<Country>) -> Option<City> {
+        if let Some(ct) = self.find_special_case_city(s) {
+            return Some(ct);
+        }
+        let as_lowercase = &s.to_lowercase().to_string();
+        // let parts = utils::split(as_lowercase);
+        let countries = utils::get_countries(country);
+        for c in &countries {
+            // let country_states = &self.states.get(&c.code).unwrap().code_to_name;
+            let country_cities = &self.cities.get(&c.code).unwrap().cities_by_state;
+            let state_cities = country_cities.get(&state.code).unwrap();
+            // println!("{:?}", state_cities);
+            for city in state_cities.into_iter() {
+                if as_lowercase.contains(&city.to_lowercase().as_str()) {
+                    return Some(City {
+                        name: city.clone(),
+                        state: Some(state.code.clone()),
+                    });
+                }
+            }
+            // let states: HashMap<String, String> = match state {
+            //     None => country_states.to_owned(),
+            //     Some(s) => country_states
+            //         .into_iter()
+            //         .filter(|&(x, _)| &s.code == x)
+            //         .map(|(x, y)| (x.clone(), y.clone()))
+            //         .collect(),
+            // };
+            // println!("{:?}", state);
+            // println!("{:?}", states);
+            // for state_code in states.keys() {
+            // }
+        }
+        None
     }
 }
 
@@ -72,19 +129,7 @@ pub fn read_cities() -> HashMap<String, CitiesMap> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Parser;
-    #[test]
-    fn test_parse_city() {
-        let p = Parser::new(None);
-        let city = p.parse_city("Toronto");
-        assert_eq!(
-            city.unwrap(),
-            super::City {
-                name: String::from("Toronto"),
-                state: Some(String::from("ON"))
-            }
-        );
-    }
+    use super::*;
 
     #[test]
     fn test_read_cities() {
@@ -100,5 +145,145 @@ mod tests {
         assert!(ca_state_cities.contains(&"Toronto".to_string()));
         let us_state_cities = us_cities.cities_by_state.get("NY").unwrap();
         assert!(us_state_cities.contains(&"New York".to_string()));
+    }
+
+    #[test]
+    fn test_find_special_case_city() {
+        let mut cities: HashMap<&str, Option<City>> = HashMap::new();
+        cities.insert(
+            "United States-District of Columbia-washington-20340-DCCL",
+            Some(City {
+                name: String::from("Washington"),
+                state: Some(String::from("DC")),
+            }),
+        );
+        cities.insert(
+            "United States-washington d.c.-20340-DCCL",
+            Some(City {
+                name: String::from("Washington"),
+                state: Some(String::from("DC")),
+            }),
+        );
+        let parser = Parser::new();
+        for (input, city) in cities {
+            let output = parser.find_special_case_city(&input);
+            assert_eq!(output, city);
+        }
+    }
+
+    #[test]
+    fn test_find_city() {
+        let mut cities: HashMap<&str, (Option<City>, State, Option<Country>)> = HashMap::new();
+        cities.insert(
+            "United States-District of Columbia-washington-20340-DCCL",
+            (
+                Some(City {
+                    name: String::from("Washington"),
+                    state: Some(String::from("DC")),
+                }),
+                State {
+                    code: String::from("DC"),
+                    name: String::from("District of Columbia"),
+                },
+                Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+            ),
+        );
+        cities.insert(
+            "Jacksonville, Florida, USA",
+            (
+                Some(City {
+                    name: String::from("Jacksonville"),
+                    state: Some(String::from("FL")),
+                }),
+                State {
+                    code: String::from("FL"),
+                    name: String::from("Florida"),
+                },
+                Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+            ),
+        );
+        cities.insert(
+            "New Westminster, British Columbia, Canada",
+            (
+                Some(City {
+                    name: String::from("New Westminster"),
+                    state: Some(String::from("BC")),
+                }),
+                State {
+                    code: String::from("BC"),
+                    name: String::from("British Columbia"),
+                },
+                Some(Country {
+                    code: String::from("CA"),
+                    name: String::from("Canada"),
+                }),
+            ),
+        );
+        cities.insert(
+            "New Westminster, British Columbia, Canada",
+            (
+                None,
+                State {
+                    code: String::from("ON"),
+                    name: String::from("Ontario"),
+                },
+                Some(Country {
+                    code: String::from("CA"),
+                    name: String::from("Canada"),
+                }),
+            ),
+        );
+        let parser = Parser::new();
+        for (input, (city, state, country)) in cities {
+            let output = parser.find_city(&input, &state, &country);
+            assert_eq!(output, city);
+        }
+    }
+
+    #[test]
+    fn test_remove_city() {
+        let mut cities: HashMap<&str, (City, &str)> = HashMap::new();
+        cities.insert(
+            "Lansing, MI, US, 48911",
+            (
+                City {
+                    name: String::from("Lansing"),
+                    state: Some(String::from("MI")),
+                },
+                "MI, US, 48911",
+            ),
+        );
+        cities.insert(
+            "Toronto, ON, Canada",
+            (
+                City {
+                    name: String::from("Toronto"),
+                    state: Some(String::from("ON")),
+                },
+                "ON, Canada",
+            ),
+        );
+        cities.insert(
+            "United States-California-San Diego-US CA San Diego",
+            (
+                City {
+                    name: String::from("San Diego"),
+                    state: Some(String::from("CA")),
+                },
+                "United States-California-US CA",
+            ),
+        );
+        let parser = Parser::new();
+        for (k, (city, output)) in cities {
+            let mut input = k.to_string();
+            parser.remove_city(&mut input, &city);
+            assert_eq!(input, output);
+        }
     }
 }
