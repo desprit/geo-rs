@@ -82,7 +82,7 @@ impl Parser {
             self.remove_zipcode(&mut remainder, &z);
         }
         // TODO: don't search for location if zipcode is available
-        println!("After removing zipcode: {}", remainder);
+        // println!("After removing zipcode: {}", remainder);
 
         // COUNTRY
         let mut country = self.find_country(&input_copy);
@@ -98,7 +98,7 @@ impl Parser {
                 country = Some(zp.country.clone());
             }
         }
-        println!("After removing country: {}", remainder);
+        // println!("After removing country: {}", remainder);
 
         // STATE
         let state = self.find_state(&input_copy, &country);
@@ -108,7 +108,7 @@ impl Parser {
         if let (None, Some(v)) = (&country, &state) {
             country = self.find_country_from_state(&v);
         }
-        println!("After removing state: {}", remainder);
+        // println!("After removing state: {}", remainder);
 
         // CITY
         let city = match state.as_ref() {
@@ -118,7 +118,7 @@ impl Parser {
         if let Some(c) = city.as_ref() {
             self.remove_city(&mut remainder, &c);
         }
-        println!("After removing city: {}", remainder);
+        // println!("After removing city: {}", remainder);
         Location {
             city,
             state,
