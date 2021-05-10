@@ -48,13 +48,10 @@ impl Parser {
             return Some(ct);
         }
         let as_lowercase = &s.to_lowercase().to_string();
-        // let parts = utils::split(as_lowercase);
         let countries = utils::get_countries(country);
         for c in &countries {
-            // let country_states = &self.states.get(&c.code).unwrap().code_to_name;
             let country_cities = &self.cities.get(&c.code).unwrap().cities_by_state;
             let state_cities = country_cities.get(&state.code).unwrap();
-            // println!("{:?}", state_cities);
             for city in state_cities.into_iter() {
                 if as_lowercase.contains(&city.to_lowercase().as_str()) {
                     return Some(City {
@@ -63,18 +60,6 @@ impl Parser {
                     });
                 }
             }
-            // let states: HashMap<String, String> = match state {
-            //     None => country_states.to_owned(),
-            //     Some(s) => country_states
-            //         .into_iter()
-            //         .filter(|&(x, _)| &s.code == x)
-            //         .map(|(x, y)| (x.clone(), y.clone()))
-            //         .collect(),
-            // };
-            // println!("{:?}", state);
-            // println!("{:?}", states);
-            // for state_code in states.keys() {
-            // }
         }
         None
     }

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 mod nodes;
 mod utils;
+use log::debug;
 use nodes::{
     read_cities, read_countries, read_states, Address, City, CountriesMap, Country, CountryCities,
     CountryStates, State, Zipcode,
@@ -76,15 +77,13 @@ impl Parser {
         utils::clean(&mut input_copy);
         let mut remainder = input_copy.to_string();
 
-        // ZIPCODE
         let mut zipcode = self.find_zipcode(&input_copy);
         if let Some(z) = zipcode.as_ref() {
             self.remove_zipcode(&mut remainder, &z);
         }
         // TODO: don't search for location if zipcode is available
-        // println!("After removing zipcode: {}", remainder);
+        debug!("After removing zipcode: {}", remainder);
 
-        // COUNTRY
         let mut country = self.find_country(&input_copy);
         if let Some(ct) = country.as_ref() {
             self.remove_country(&mut remainder, &ct);
@@ -98,9 +97,8 @@ impl Parser {
                 country = Some(zp.country.clone());
             }
         }
-        // println!("After removing country: {}", remainder);
+        debug!("After removing country: {}", remainder);
 
-        // STATE
         let state = self.find_state(&input_copy, &country);
         if let Some(c) = state.as_ref() {
             self.remove_state(&mut remainder, &c);
@@ -108,9 +106,8 @@ impl Parser {
         if let (None, Some(v)) = (&country, &state) {
             country = self.find_country_from_state(&v);
         }
-        // println!("After removing state: {}", remainder);
+        debug!("After removing state: {}", remainder);
 
-        // CITY
         let city = match state.as_ref() {
             Some(v) => self.find_city(&input_copy, &v, &country),
             None => None,
@@ -118,7 +115,7 @@ impl Parser {
         if let Some(c) = city.as_ref() {
             self.remove_city(&mut remainder, &c);
         }
-        // println!("After removing city: {}", remainder);
+        debug!("After removing city: {}", remainder);
         Location {
             city,
             state,
