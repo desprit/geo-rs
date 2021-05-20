@@ -52,21 +52,9 @@ impl Parser {
         let parts = utils::split(as_lowercase);
         let countries = utils::get_countries(&country);
         for c in &countries {
-            let states = &self.states.get(&c.code).unwrap().code_to_name;
-            for (k, v) in states {
-                if as_lowercase.contains(&v.to_lowercase()) {
-                    return Some(State {
-                        name: v.into(),
-                        code: k.into(),
-                    });
-                }
-            }
-        }
-        for c in &countries {
-            let states = &self.states.get(&c.code).unwrap().code_to_name;
-            for part in &parts {
-                for (k, v) in states {
-                    if k == &part.to_uppercase().to_string() {
+            if let Some(states) = self.states.get(&c.code) {
+                for (k, v) in &states.code_to_name {
+                    if as_lowercase.contains(&v.to_lowercase()) {
                         return Some(State {
                             name: v.into(),
                             code: k.into(),
@@ -75,18 +63,33 @@ impl Parser {
                 }
             }
         }
+        for c in &countries {
+            if let Some(states) = self.states.get(&c.code) {
+                for part in &parts {
+                    for (k, v) in &states.code_to_name {
+                        if k == &part.to_uppercase().to_string() {
+                            return Some(State {
+                                name: v.into(),
+                                code: k.into(),
+                            });
+                        }
+                    }
+                }
+            };
+        }
         None
     }
 
     pub fn find_country_from_state(&self, state: &State) -> Option<Country> {
         let countries = utils::get_countries(&None);
         for c in &countries {
-            let states = &self.states.get(&c.code).unwrap().code_to_name;
-            for state_code in states.keys() {
-                if state_code == &state.code {
-                    return Some(c.clone());
+            if let Some(states) = self.states.get(&c.code) {
+                for state_code in states.code_to_name.keys() {
+                    if state_code == &state.code {
+                        return Some(c.clone());
+                    }
                 }
-            }
+            };
         }
         None
     }

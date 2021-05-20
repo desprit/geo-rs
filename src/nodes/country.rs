@@ -52,23 +52,27 @@ impl Parser {
             });
         }
         if parts.contains(&"ca") {
-            let canada: Vec<&String> = self.states.get("CA").unwrap().code_to_name.keys().collect();
-            if let Some(_) = parts.iter().find(|x| canada.contains(&&x.to_uppercase())) {
-                return Some(Country {
-                    name: "Canada".to_string(),
-                    code: "CA".to_string(),
-                });
-            }
-            let us_cities = self.cities.get("US").unwrap();
-            let califoria: &Vec<String> = us_cities.cities_by_state.get("CA").unwrap();
-            if let Some(_) = califoria
-                .iter()
-                .find(|x| as_lowercase.contains(&x.to_lowercase()))
-            {
-                return Some(Country {
-                    name: "United States".to_string(),
-                    code: "US".to_string(),
-                });
+            if let Some(states) = self.states.get("CA") {
+                let canada: Vec<&String> = states.code_to_name.keys().collect();
+                if let Some(_) = parts.iter().find(|x| canada.contains(&&x.to_uppercase())) {
+                    return Some(Country {
+                        name: "Canada".to_string(),
+                        code: "CA".to_string(),
+                    });
+                }
+                if let Some(us_cities) = self.cities.get("US") {
+                    if let Some(califoria) = us_cities.cities_by_state.get("CA") {
+                        if let Some(_) = califoria
+                            .iter()
+                            .find(|x| as_lowercase.contains(&x.to_lowercase()))
+                        {
+                            return Some(Country {
+                                name: "United States".to_string(),
+                                code: "US".to_string(),
+                            });
+                        }
+                    }
+                }
             }
         }
         // TODO: check if string contains states (?)
@@ -246,7 +250,6 @@ mod tests {
         let parser = Parser::new();
         for (k, (country, output)) in countries {
             let mut input = k.to_string();
-            // let country = parser.find_country(&k).unwrap();
             parser.remove_country(&mut input, &country);
             assert_eq!(input, output);
         }

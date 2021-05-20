@@ -50,14 +50,16 @@ impl Parser {
         let as_lowercase = &s.to_lowercase().to_string();
         let countries = utils::get_countries(country);
         for c in &countries {
-            let country_cities = &self.cities.get(&c.code).unwrap().cities_by_state;
-            let state_cities = country_cities.get(&state.code).unwrap();
-            for city in state_cities.into_iter() {
-                if as_lowercase.contains(&city.to_lowercase().as_str()) {
-                    return Some(City {
-                        name: city.clone(),
-                        state: Some(state.code.clone()),
-                    });
+            if let Some(country_cities) = &self.cities.get(&c.code) {
+                if let Some(state_cities) = country_cities.cities_by_state.get(&state.code) {
+                    for city in state_cities.into_iter() {
+                        if as_lowercase.contains(&city.to_lowercase().as_str()) {
+                            return Some(City {
+                                name: city.clone(),
+                                state: Some(state.code.clone()),
+                            });
+                        }
+                    }
                 }
             }
         }
