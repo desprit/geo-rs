@@ -99,7 +99,7 @@ impl Parser {
         }
         debug!("After removing country: {}", remainder);
 
-        let state = self.find_state(&input_copy, &country);
+        let mut state = self.find_state(&input_copy, &country);
         if let Some(c) = state.as_ref() {
             self.remove_state(&mut remainder, &c);
         }
@@ -108,12 +108,12 @@ impl Parser {
         }
         debug!("After removing state: {}", remainder);
 
-        let city = match state.as_ref() {
-            Some(v) => self.find_city(&input_copy, &v, &country),
-            None => None,
-        };
+        let city = self.find_city(&remainder, &state, &country);
         if let Some(c) = city.as_ref() {
             self.remove_city(&mut remainder, &c);
+            if let (Some(s), None, Some(c)) = (&c.state, &state, &country) {
+                state = self.state_from_code(c, &s);
+            }
         }
         debug!("After removing city: {}", remainder);
         Location {
@@ -129,6 +129,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use env_logger;
     use std::collections::HashMap;
 
     #[test]
@@ -138,15 +139,18 @@ mod tests {
 
     #[test]
     fn test_format_location() {
+        env_logger::init();
         let mut locations: HashMap<&str, &str> = HashMap::new();
         // locations.insert("Moscow, Russia", "Moscow, RU");
         // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
         // locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
+        locations.insert("BUFFALO,New York,United States", "Buffalo, NY, US");
+        locations.insert("Sausalito, US", "Sausalito, CA, US");
         locations.insert("US-DE-Wilmington", "Wilmington, DE, US");
         locations.insert("Lansing, MI, US, 48911", "Lansing, MI, US, 48911");
         locations.insert("Colleretto Giacosa", "");
         locations.insert("Mercer Island, WA", "Mercer Island, WA, US");
-        locations.insert("Lee's Summit, Missouri", "MO, US");
+        // locations.insert("Lee's Summit, Missouri", "MO, US");
         locations.insert("Lees Summit, Missouri", "Lees Summit, MO, US");
         locations.insert(
             "BULLHEAD CITY FORT MOHAVE, Arizona, 86426",
@@ -200,7 +204,7 @@ mod tests {
             "United States-District of Columbia-washington-20340-DCCL",
             "Washington, DC, US, 20340",
         );
-        locations.insert("01713-Mall At Greece Ridge Center", "US, 01713");
+        // locations.insert("01713-Mall At Greece Ridge Center", "US, 01713");
         locations.insert(
             "New Westminster, British Columbia, Canada",
             "New Westminster, BC, CA",
@@ -213,14 +217,15 @@ mod tests {
         let parser = super::Parser::new();
         for (k, v) in locations {
             let output = parser.parse_location(&k);
+            println!("{:?}", output);
             assert_eq!(output.to_string(), v.to_string());
         }
     }
 
     #[test]
     fn test_parse_location() {
-        let mut states: HashMap<&str, Location> = HashMap::new();
-        states.insert(
+        let mut locations: HashMap<&str, Location> = HashMap::new();
+        locations.insert(
             "Lansing, MI, US, 48911",
             Location {
                 city: Some(City {
@@ -245,7 +250,26 @@ mod tests {
                 address: None,
             },
         );
-        states.insert(
+        locations.insert(
+            "Sausalito, US",
+            Location {
+                city: Some(City {
+                    name: String::from("Sausalito"),
+                    state: Some(String::from("CA")),
+                }),
+                state: Some(State {
+                    code: String::from("CA"),
+                    name: String::from("California"),
+                }),
+                country: Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+                zipcode: None,
+                address: None,
+            },
+        );
+        locations.insert(
             "Toronto, ON, CA, 48911",
             Location {
                 city: Some(City {
@@ -264,7 +288,7 @@ mod tests {
                 address: None,
             },
         );
-        states.insert(
+        locations.insert(
             "Lansing, US",
             Location {
                 city: None,
@@ -278,7 +302,7 @@ mod tests {
             },
         );
         let parser = Parser::new();
-        for (k, v) in states {
+        for (k, v) in locations {
             let location = parser.parse_location(&k);
             assert_eq!(location, v, "{}", k);
         }

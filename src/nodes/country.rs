@@ -142,6 +142,13 @@ mod tests {
         let mut countries: HashMap<&str, Option<Country>> = HashMap::new();
         countries.insert("Lansing, MI", None);
         countries.insert(
+            "Hyderabad, TG, IN",
+            Some(Country {
+                name: String::from("India"),
+                code: String::from("IN"),
+            }),
+        );
+        countries.insert(
             "Lansing, MI, US, 48911",
             Some(Country {
                 name: String::from("United States"),

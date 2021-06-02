@@ -23,8 +23,11 @@ impl fmt::Display for State {
 
 impl Parser {
     pub fn remove_state(&self, s: &mut String, state: &State) {
-        *s = s.replace(&state.name, "");
-        *s = s.replace(&state.code, "");
+        if s.contains(&state.code) {
+            *s = s.replace(&state.code, "");
+        } else {
+            *s = s.replace(&state.name, "");
+        }
         utils::clean(s);
     }
 
@@ -78,6 +81,21 @@ impl Parser {
             };
         }
         None
+    }
+
+    pub fn state_from_code(&self, country: &Country, code: &str) -> Option<State> {
+        let countries = utils::get_countries(&Some(country.to_owned()));
+        for c in &countries {
+            for (k, v) in &self.states.get(&c.code).unwrap().code_to_name {
+                if k.as_str() == code {
+                    return Some(State {
+                        code: k.clone(),
+                        name: v.clone(),
+                    });
+                }
+            }
+        }
+        return None;
     }
 
     pub fn find_country_from_state(&self, state: &State) -> Option<Country> {

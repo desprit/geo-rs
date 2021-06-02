@@ -43,7 +43,12 @@ impl Parser {
         None
     }
 
-    pub fn find_city(&self, s: &str, state: &State, country: &Option<Country>) -> Option<City> {
+    pub fn find_city(
+        &self,
+        s: &str,
+        state: &Option<State>,
+        country: &Option<Country>,
+    ) -> Option<City> {
         if let Some(ct) = self.find_special_case_city(s) {
             return Some(ct);
         }
@@ -51,13 +56,29 @@ impl Parser {
         let countries = utils::get_countries(country);
         for c in &countries {
             if let Some(country_cities) = &self.cities.get(&c.code) {
-                if let Some(state_cities) = country_cities.cities_by_state.get(&state.code) {
-                    for city in state_cities.into_iter() {
-                        if as_lowercase.contains(&city.to_lowercase().as_str()) {
-                            return Some(City {
-                                name: city.clone(),
-                                state: Some(state.code.clone()),
-                            });
+                if let Some(st) = state {
+                    if let Some(state_cities) = country_cities.cities_by_state.get(&st.code) {
+                        for city in state_cities.into_iter() {
+                            if as_lowercase.contains(&city.to_lowercase().as_str()) {
+                                return Some(City {
+                                    name: city.clone(),
+                                    state: Some(st.code.clone()),
+                                });
+                            }
+                        }
+                    }
+                }
+                if let Some(states) = self.states.get(&c.code) {
+                    for (k, _) in &states.code_to_name {
+                        if let Some(state_cities) = country_cities.cities_by_state.get(k) {
+                            for city in state_cities.into_iter() {
+                                if as_lowercase.contains(&city.to_lowercase().as_str()) {
+                                    return Some(City {
+                                        name: city.clone(),
+                                        state: Some(k.clone()),
+                                    });
+                                }
+                            }
                         }
                     }
                 }
@@ -162,6 +183,23 @@ mod tests {
     fn test_find_city() {
         let mut cities: HashMap<&str, (Option<City>, State, Option<Country>)> = HashMap::new();
         cities.insert(
+            "Sausalito",
+            (
+                Some(City {
+                    name: String::from("Sausalito"),
+                    state: Some(String::from("CA")),
+                }),
+                State {
+                    code: String::from("CA"),
+                    name: String::from("California"),
+                },
+                Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+            ),
+        );
+        cities.insert(
             "United States-District of Columbia-washington-20340-DCCL",
             (
                 Some(City {
@@ -171,6 +209,23 @@ mod tests {
                 State {
                     code: String::from("DC"),
                     name: String::from("District of Columbia"),
+                },
+                Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+            ),
+        );
+        cities.insert(
+            "Sausalito, CA, US",
+            (
+                Some(City {
+                    name: String::from("Sausalito"),
+                    state: Some(String::from("CA")),
+                }),
+                State {
+                    code: String::from("CA"),
+                    name: String::from("California"),
                 },
                 Some(Country {
                     code: String::from("US"),
@@ -212,23 +267,9 @@ mod tests {
                 }),
             ),
         );
-        cities.insert(
-            "New Westminster, British Columbia, Canada",
-            (
-                None,
-                State {
-                    code: String::from("ON"),
-                    name: String::from("Ontario"),
-                },
-                Some(Country {
-                    code: String::from("CA"),
-                    name: String::from("Canada"),
-                }),
-            ),
-        );
         let parser = Parser::new();
         for (input, (city, state, country)) in cities {
-            let output = parser.find_city(&input, &state, &country);
+            let output = parser.find_city(&input, &Some(state), &country);
             assert_eq!(output, city);
         }
     }
