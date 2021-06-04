@@ -1,16 +1,19 @@
 use crate::Country;
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
-const RE_BRACKETS: &str = r"\(.*?\)";
-const RE_LEADING: &str = r"^[\s\-,;:_\.\?!/]*";
-const RE_TRAILING: &str = r"[\s\-,;:_\.\?!/]*$";
-const RE_SPLITTER1: &str = r"[^a-zA-Z0-9\s-]";
-const RE_SPLITTER2: &str = r"[^a-zA-Z0-9]";
-const RE_SPACES: &str = r"\s+";
+lazy_static! {
+    static ref RE_BRACKETS: Regex = Regex::new(r"\(.*?\)").unwrap();
+    static ref RE_LEADING: Regex = Regex::new(r"^[\s\-,;:_\.\?!/]*").unwrap();
+    static ref RE_TRAILING: Regex = Regex::new(r"[\s\-,;:_\.\?!/]*$").unwrap();
+    static ref RE_SPLITTER1: Regex = Regex::new(r"[^a-zA-Z0-9\s-]").unwrap();
+    static ref RE_SPLITTER2: Regex = Regex::new(r"[^a-zA-Z0-9]").unwrap();
+    static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
+}
 
 /// Read file with the given name from `src/data` folder and return `std::io::Lines`
 ///
@@ -21,7 +24,8 @@ const RE_SPACES: &str = r"\s+";
 /// # Examples
 ///
 /// ```
-/// let lines = read_lines("countries.txt");
+/// use geo_rs;
+/// let lines = geo_rs::utils::read_lines("countries.txt");
 /// ```
 pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
     let data_path = format!("{}/src/data", env!("CARGO_MANIFEST_DIR"));
@@ -39,33 +43,20 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// # Examples
 ///
 /// ```
-/// let mut s = "!(#3)Toronto ,".to_string();
+/// let mut s = String::from("!(#3)Toronto ,");
 /// clean(&mut s);
-/// assert_eq!(s, "Toronto".to_string());
+/// assert_eq!(s, String::from("Toronto"));
 /// ```
 pub fn clean(s: &mut String) {
-    *s = Regex::new(RE_BRACKETS)
-        .unwrap()
-        .replace_all(&s, "")
-        .to_string();
-    *s = Regex::new(RE_LEADING)
-        .unwrap()
-        .replace_all(&s, "")
-        .to_string();
-    *s = Regex::new(RE_TRAILING)
-        .unwrap()
-        .replace_all(&s, "")
-        .to_string();
-    *s = Regex::new(RE_SPLITTER1)
-        .unwrap()
+    *s = RE_BRACKETS.replace_all(&s, "").to_string();
+    *s = RE_LEADING.replace_all(&s, "").to_string();
+    *s = RE_TRAILING.replace_all(&s, "").to_string();
+    *s = RE_SPLITTER1
         .split(&s)
         .filter(|&x| !x.is_empty())
         .collect::<Vec<&str>>()
         .join(", ");
-    *s = Regex::new(RE_SPACES)
-        .unwrap()
-        .replace_all(&s, " ")
-        .to_string();
+    *s = RE_SPACES.replace_all(&s, " ").to_string();
     *s = s
         .replace("- ", "-")
         .replace(", , ", ", ")
@@ -81,12 +72,12 @@ pub fn clean(s: &mut String) {
 /// # Examples
 ///
 /// ```
-/// let parts = split("a-b.c")
-/// assert_eq(parts, vec!["a", "b", "c"])
+/// use geo_rs;
+/// let parts = geo_rs::utils::split("a-b.c");
+/// assert_eq!(parts, vec!["a", "b", "c"]);
 /// ```
 pub fn split(s: &str) -> Vec<&str> {
-    let split_regex = Regex::new(RE_SPLITTER2).unwrap();
-    split_regex.split(&s).filter(|&x| !x.is_empty()).collect()
+    RE_SPLITTER2.split(&s).filter(|&x| !x.is_empty()).collect()
 }
 
 /// Return a `Vec` of CA and US countries or a single country `Vec`
@@ -159,14 +150,5 @@ mod tests {
         }));
         assert_eq!(countries.len(), 1);
         assert_eq!(countries[0].code, "CA".to_string());
-    }
-
-    #[test]
-    fn test_regex_patterns_can_compile() {
-        Regex::new(RE_BRACKETS).unwrap();
-        Regex::new(RE_LEADING).unwrap();
-        Regex::new(RE_TRAILING).unwrap();
-        Regex::new(RE_SPLITTER1).unwrap();
-        Regex::new(RE_SPLITTER2).unwrap();
     }
 }

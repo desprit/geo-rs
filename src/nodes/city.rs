@@ -156,6 +156,18 @@ mod tests {
     }
 
     #[test]
+    fn test_california_cities() {
+        let parser = Parser::new();
+        parser
+            .cities
+            .get("US")
+            .unwrap()
+            .cities_by_state
+            .get("CA")
+            .unwrap();
+    }
+
+    #[test]
     fn test_find_special_case_city() {
         let mut cities: HashMap<&str, Option<City>> = HashMap::new();
         cities.insert(

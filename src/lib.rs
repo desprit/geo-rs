@@ -1,135 +1,86 @@
 #![allow(dead_code)]
+#[macro_use]
+extern crate log;
 mod nodes;
 mod utils;
-use log::debug;
 use nodes::{
-    read_cities, read_countries, read_states, Address, City, CountriesMap, Country, CountryCities,
-    CountryStates, State, Zipcode,
+    read_cities, read_countries, read_states, CountriesMap, Country, CountryCities, CountryStates,
+    Location, State,
 };
-
-#[derive(Debug, Clone, Hash, Eq)]
-pub struct Location {
-    pub city: Option<City>,
-    pub state: Option<State>,
-    pub country: Option<Country>,
-    pub zipcode: Option<Zipcode>,
-    pub address: Option<Address>,
-}
-
-impl PartialEq for Location {
-    fn eq(&self, other: &Location) -> bool {
-        self.city == other.city
-            && self.state == other.state
-            && self.country == other.country
-            && self.zipcode == other.zipcode
-            && self.address == other.address
-    }
-}
-
-impl Location {
-    pub fn to_string(&self) -> String {
-        let mut as_string = String::new();
-        if let Some(city) = &self.city {
-            as_string.push_str(", ");
-            as_string.push_str(format!("{}", city).as_str());
-        }
-        if let Some(state) = &self.state {
-            as_string.push_str(", ");
-            as_string.push_str(format!("{}", state).as_str());
-        }
-        if let Some(country) = &self.country {
-            as_string.push_str(", ");
-            as_string.push_str(format!("{}", country).as_str());
-        }
-        if let Some(zipcode) = &self.zipcode {
-            as_string.push_str(", ");
-            as_string.push_str(format!("{}", zipcode).as_str());
-        }
-        if let Some(address) = &self.address {
-            as_string.push_str(", ");
-            as_string.push_str(address.address.as_str());
-        }
-        if as_string.chars().count() > 0 {
-            as_string = as_string.trim().trim_start_matches(",").trim().to_string();
-        }
-        as_string
-    }
-}
 
 #[derive(Debug)]
 pub struct Parser {
-    countries: CountriesMap,
-    states: CountryStates,
     cities: CountryCities,
+    states: CountryStates,
+    countries: CountriesMap,
 }
 
 impl Parser {
     pub fn new() -> Self {
         Self {
-            countries: read_countries(),
-            states: read_states(),
             cities: read_cities(),
+            states: read_states(),
+            countries: read_countries(),
         }
     }
 
+    /// Parse location string and try to extract geo parts out of it.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - Location string that's gonna be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let parser = Parser::new();
+    /// let location = parser.parse_location("Toronto, ON, CA");
+    /// assert_eq(location.city.name, String::from("Toronto"));
+    /// assert_eq(location.state.code, String::from("ON"));
+    /// assert_eq(location.country.code, String::from("CA"));
+    /// ```
     pub fn parse_location(&self, input: &str) -> Location {
-        let mut input_copy = input.to_string().clone();
-        utils::clean(&mut input_copy);
-        let mut remainder = input_copy.to_string();
-
-        let mut zipcode = self.find_zipcode(&input_copy);
-        if let Some(z) = zipcode.as_ref() {
-            self.remove_zipcode(&mut remainder, &z);
-        }
-        // TODO: don't search for location if zipcode is available
-        debug!("After removing zipcode: {}", remainder);
-
-        let mut country = self.find_country(&input_copy);
-        if let Some(ct) = country.as_ref() {
-            self.remove_country(&mut remainder, &ct);
-        }
-        if let Some(zp) = zipcode.as_ref() {
-            if let Some(ct) = country.as_ref() {
-                if &zp.country != ct {
-                    zipcode = None;
-                }
-            } else {
-                country = Some(zp.country.clone());
-            }
-        }
-        debug!("After removing country: {}", remainder);
-
-        let mut state = self.find_state(&input_copy, &country);
-        if let Some(c) = state.as_ref() {
-            self.remove_state(&mut remainder, &c);
-        }
-        if let (None, Some(v)) = (&country, &state) {
-            country = self.find_country_from_state(&v);
-        }
-        debug!("After removing state: {}", remainder);
-
-        let city = self.find_city(&remainder, &state, &country);
-        if let Some(c) = city.as_ref() {
-            self.remove_city(&mut remainder, &c);
-            if let (Some(s), None, Some(c)) = (&c.state, &state, &country) {
-                state = self.state_from_code(c, &s);
-            }
-        }
-        debug!("After removing city: {}", remainder);
-        Location {
-            city,
-            state,
-            country,
-            zipcode,
+        let mut output = Location {
+            city: None,
+            state: None,
+            country: None,
+            zipcode: None,
             address: None,
+        };
+        let mut input_copy = input.to_string();
+        utils::clean(&mut input_copy);
+        let mut remainder = input_copy.clone();
+        debug!("input value: {}", remainder);
+        self.find_zipcode(&mut output, &remainder);
+        if let Some(z) = &output.zipcode {
+            self.remove_zipcode(z, &mut remainder);
+            if let Some(c) = &output.country {
+                self.remove_country(c, &mut remainder);
+            }
         }
+        self.find_country(&mut output, &remainder);
+        if let Some(c) = &output.country {
+            self.remove_country(c, &mut remainder);
+        }
+        self.find_state(&mut output, &remainder);
+        if let (Some(s), Some(c)) = (&output.state, &output.country) {
+            self.remove_state(s, c, &mut remainder);
+            self.remove_country(c, &mut remainder);
+        }
+        let city = self.find_city(&remainder, &output.state, &output.country);
+        if let Some(c) = city.as_ref() {
+            output.city = city.clone();
+            self.remove_city(&mut remainder, &c);
+        }
+        debug!("output value: {}, remainder: {}", output, remainder);
+        output
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use env_logger;
+    use nodes::{City, Country, State, Zipcode};
     use std::collections::HashMap;
 
     #[test]
@@ -139,18 +90,17 @@ mod tests {
 
     #[test]
     fn test_format_location() {
-        env_logger::init();
         let mut locations: HashMap<&str, &str> = HashMap::new();
         // locations.insert("Moscow, Russia", "Moscow, RU");
         // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
         // locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
+        // locations.insert("Sausalito, US", "Sausalito, CA, US");
+        // locations.insert("Lee's Summit, Missouri", "MO, US");
         locations.insert("BUFFALO,New York,United States", "Buffalo, NY, US");
-        locations.insert("Sausalito, US", "Sausalito, CA, US");
         locations.insert("US-DE-Wilmington", "Wilmington, DE, US");
         locations.insert("Lansing, MI, US, 48911", "Lansing, MI, US, 48911");
         locations.insert("Colleretto Giacosa", "");
         locations.insert("Mercer Island, WA", "Mercer Island, WA, US");
-        // locations.insert("Lee's Summit, Missouri", "MO, US");
         locations.insert("Lees Summit, Missouri", "Lees Summit, MO, US");
         locations.insert(
             "BULLHEAD CITY FORT MOHAVE, Arizona, 86426",
@@ -222,9 +172,27 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_parse_location() {
+    fn get_locations() -> HashMap<&'static str, Location> {
         let mut locations: HashMap<&str, Location> = HashMap::new();
+        locations.insert(
+            "BUFFALO, New York, US",
+            Location {
+                city: Some(City {
+                    name: String::from("Buffalo"),
+                    state: Some(String::from("NY")),
+                }),
+                state: Some(State {
+                    code: String::from("NY"),
+                    name: String::from("New York"),
+                }),
+                country: Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+                zipcode: None,
+                address: None,
+            },
+        );
         locations.insert(
             "Lansing, MI, US, 48911",
             Location {
@@ -242,35 +210,31 @@ mod tests {
                 }),
                 zipcode: Some(Zipcode {
                     zipcode: String::from("48911"),
-                    country: Country {
-                        code: String::from("US"),
-                        name: String::from("United States"),
-                    },
                 }),
                 address: None,
             },
         );
+        // locations.insert(
+        //     "Sausalito, US",
+        //     Location {
+        //         city: Some(City {
+        //             name: String::from("Sausalito"),
+        //             state: Some(String::from("CA")),
+        //         }),
+        //         state: Some(State {
+        //             code: String::from("CA"),
+        //             name: String::from("California"),
+        //         }),
+        //         country: Some(Country {
+        //             code: String::from("US"),
+        //             name: String::from("United States"),
+        //         }),
+        //         zipcode: None,
+        //         address: None,
+        //     },
+        // );
         locations.insert(
-            "Sausalito, US",
-            Location {
-                city: Some(City {
-                    name: String::from("Sausalito"),
-                    state: Some(String::from("CA")),
-                }),
-                state: Some(State {
-                    code: String::from("CA"),
-                    name: String::from("California"),
-                }),
-                country: Some(Country {
-                    code: String::from("US"),
-                    name: String::from("United States"),
-                }),
-                zipcode: None,
-                address: None,
-            },
-        );
-        locations.insert(
-            "Toronto, ON, CA, 48911",
+            "Toronto, ON, CA",
             Location {
                 city: Some(City {
                     name: String::from("Toronto"),
@@ -288,58 +252,48 @@ mod tests {
                 address: None,
             },
         );
-        locations.insert(
-            "Lansing, US",
-            Location {
-                city: None,
-                state: None,
-                country: Some(Country {
-                    code: String::from("US"),
-                    name: String::from("United States"),
-                }),
-                zipcode: None,
-                address: None,
-            },
-        );
+        // locations.insert(
+        //     "Lansing, US",
+        //     Location {
+        //         city: None,
+        //         state: None,
+        //         country: Some(Country {
+        //             code: String::from("US"),
+        //             name: String::from("United States"),
+        //         }),
+        //         zipcode: None,
+        //         address: None,
+        //     },
+        // );
+        locations
+    }
+
+    #[test]
+    fn test_parse_location() {
         let parser = Parser::new();
-        for (k, v) in locations {
+        for (k, v) in get_locations() {
             let location = parser.parse_location(&k);
             assert_eq!(location, v, "{}", k);
         }
     }
 
+    /// cargo test benchmark_parse_location -- --nocapture --ignored
+    /// 9.5ms -> 3.77ms -> ~1ms -> ~1.8ms
     #[test]
-    fn test_location_to_string() {
-        let mut locations: HashMap<Location, &str> = HashMap::new();
-        locations.insert(
-            Location {
-                city: Some(City {
-                    name: String::from("Toronto"),
-                    state: Some(String::from("ON")),
-                }),
-                state: Some(State {
-                    code: String::from("ON"),
-                    name: String::from("Ontario"),
-                }),
-                country: Some(Country {
-                    code: String::from("CA"),
-                    name: String::from("Canada"),
-                }),
-                zipcode: Some(Zipcode {
-                    zipcode: String::from("M4E3H8"),
-                    country: Country {
-                        code: String::from("CA"),
-                        name: String::from("Canada"),
-                    },
-                }),
-                address: Some(Address {
-                    address: String::from("119 Yonge St"),
-                }),
-            },
-            "Toronto, ON, CA, M4E3H8, 119 Yonge St",
-        );
-        for (location, output) in locations {
-            assert_eq!(location.to_string(), output);
+    #[ignore]
+    fn benchmark_parse_location() {
+        let n = 250;
+        let parser = Parser::new();
+        let before = std::time::Instant::now();
+        for _ in 0..n {
+            for location_string in get_locations().keys() {
+                parser.parse_location(&location_string);
+            }
         }
+        println!(
+            "Elapsed time: {:.2?}, {:.2?} each",
+            before.elapsed(),
+            before.elapsed() / (n * get_locations().len() as u32)
+        );
     }
 }
