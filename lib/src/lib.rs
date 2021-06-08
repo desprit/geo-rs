@@ -67,10 +67,12 @@ impl Parser {
             self.remove_state(s, c, &mut remainder);
             self.remove_country(c, &mut remainder);
         }
-        let city = self.find_city(&remainder, &output.state, &output.country);
-        if let Some(c) = city.as_ref() {
-            output.city = city.clone();
-            self.remove_city(&mut remainder, &c);
+        if &output.country.is_some() | &output.state.is_some() {
+            let city = self.find_city(&remainder, &output.state, &output.country);
+            if let Some(c) = city.as_ref() {
+                output.city = city.clone();
+                self.remove_city(&mut remainder, &c);
+            }
         }
         debug!("output value: {}, remainder: {}", output, remainder);
         output
