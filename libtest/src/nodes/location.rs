@@ -53,7 +53,6 @@ impl std::fmt::Display for Location {
             .map(|a| format!("{}", a))
             .unwrap_or(String::from(""));
         let mut location = format!("{}, {}, {}, {}, {}", city, state, country, zipcode, address);
-        debug!("{}", location);
         location = COMMAS
             .replace_all(&location, ", ")
             .trim()

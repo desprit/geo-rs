@@ -139,7 +139,6 @@ impl Parser {
     /// assert_eq!(location, String::from("New York, NY"));
     /// ```
     pub fn remove_country(&self, country: &Country, input: &mut String) {
-        println!("{}", country);
         let case_insensitive_parts: Vec<&str> = match country.code.as_str() {
             "US" => vec!["united states of america", "united states"],
             "CA" => vec!["canada"],

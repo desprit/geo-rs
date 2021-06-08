@@ -66,6 +66,7 @@ impl Parser {
                                 });
                             }
                         }
+                        continue;
                     }
                 }
                 if let Some(states) = self.states.get(&c.code) {
@@ -194,6 +195,20 @@ mod tests {
     #[test]
     fn test_find_city() {
         let mut cities: HashMap<&str, (Option<City>, State, Option<Country>)> = HashMap::new();
+        cities.insert(
+            "Offutt AFB, Nebraska -Offutt AFB, NE 68113 US",
+            (
+                None,
+                State {
+                    code: String::from("NE"),
+                    name: String::from("Nebraska"),
+                },
+                Some(Country {
+                    code: String::from("US"),
+                    name: String::from("United States"),
+                }),
+            ),
+        );
         cities.insert(
             "Sausalito",
             (
