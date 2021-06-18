@@ -42,16 +42,17 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
-    /// let mut location = Location {
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
+    /// let mut location = geo_rs::nodes::Location {
     ///     city: None,
     ///     state: None,
     ///     country: None,
     ///     zipcode: None,
     ///     address: None,
     /// };
-    /// parser.find_zipcode(&mut location, "Saint-Lin-Laurentides, QC J5MM 0G3");
-    /// assert_eq!(location.zipcode.zipcode, String::from("J5MM 0G3"));
+    /// parser.find_zipcode(&mut location, "Saint-Lin-Laurentides, QC J5M 0G3");
+    /// assert_eq!(location.zipcode.unwrap().zipcode, String::from("J5M 0G3"));
     /// assert_eq!(location.country.unwrap().code, String::from("CA"));
     /// ```
     pub fn find_zipcode(&self, location: &mut Location, input: &str) {
@@ -94,9 +95,10 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
     /// let mut location = String::from("QC J5MM 0G3");
-    /// let zipcode = Some(Zipcode { zipcode: String::from("J5MM 0G3") })
+    /// let zipcode = geo_rs::nodes::Zipcode { zipcode: String::from("J5MM 0G3") };
     /// parser.remove_zipcode(&zipcode, &mut location);
     /// assert_eq!(location, String::from("QC"));
     /// ```
@@ -110,50 +112,12 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Country;
-    use std::collections::HashMap;
-
-    fn get_zipcodes() -> HashMap<&'static str, (Option<Zipcode>, Option<Country>)> {
-        let mut zipcodes: HashMap<&str, (Option<Zipcode>, Option<Country>)> = HashMap::new();
-        zipcodes.insert("Saint-Lin-Laurentides, QC J5MM 0G3", (None, None));
-        zipcodes.insert("Saint-Lin-Laurentides, QC", (None, None));
-        zipcodes.insert("Saint-Lin-Laurentides, QC 11111111", (None, None));
-        zipcodes.insert("Lansing, MI, US", (None, None));
-        zipcodes.insert("Lansing, MI, US, 67139037", (None, None));
-        zipcodes.insert(
-            "Lansing, MI, US, 48911",
-            (
-                Some(Zipcode {
-                    zipcode: String::from("48911"),
-                }),
-                Some(UNITED_STATES.clone()),
-            ),
-        );
-        zipcodes.insert(
-            "Saint-Lin-Laurentides, QC J5M 0G3",
-            (
-                Some(Zipcode {
-                    zipcode: String::from("J5M 0G3"),
-                }),
-                Some(CANADA.clone()),
-            ),
-        );
-        zipcodes.insert(
-            "Sherwood Park, AB, CA, T8A3H9",
-            (
-                Some(Zipcode {
-                    zipcode: String::from("T8A3H9"),
-                }),
-                Some(CANADA.clone()),
-            ),
-        );
-        zipcodes
-    }
+    use crate::mocks;
 
     #[test]
     fn test_find_zipcode() {
         let parser = Parser::new();
-        for (input, output) in get_zipcodes() {
+        for (input, output) in mocks::get_mocks() {
             let mut location = Location {
                 city: None,
                 state: None,
@@ -162,8 +126,7 @@ mod tests {
                 address: None,
             };
             parser.find_zipcode(&mut location, &input);
-            assert_eq!(location.zipcode, output.0);
-            assert_eq!(location.country, output.1);
+            assert_eq!(location.zipcode, output.3, "input: {}", input);
         }
     }
 
@@ -200,7 +163,7 @@ mod tests {
         let parser = Parser::new();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for zipcode in get_zipcodes().keys() {
+            for zipcode in mocks::get_mocks().keys() {
                 let mut location = Location {
                     city: None,
                     state: None,
@@ -214,7 +177,7 @@ mod tests {
         println!(
             "Elapsed time: {:.2?}, {:.2?} each",
             before.elapsed(),
-            before.elapsed() / (n * get_zipcodes().len() as u32)
+            before.elapsed() / (n * mocks::get_mocks().len() as u32)
         );
     }
 }

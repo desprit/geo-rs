@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 #[macro_use]
 extern crate log;
-mod nodes;
-mod utils;
+mod mocks;
+pub mod nodes;
+pub mod utils;
 use nodes::{
     read_cities, read_countries, read_states, CountriesMap, Country, CountryCities, CountryStates,
     Location, State,
@@ -33,11 +34,12 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
     /// let location = parser.parse_location("Toronto, ON, CA");
-    /// assert_eq(location.city.name, String::from("Toronto"));
-    /// assert_eq(location.state.code, String::from("ON"));
-    /// assert_eq(location.country.code, String::from("CA"));
+    /// assert_eq!(location.city.unwrap().name, String::from("Toronto"));
+    /// assert_eq!(location.state.unwrap().code, String::from("ON"));
+    /// assert_eq!(location.country.unwrap().code, String::from("CA"));
     /// ```
     pub fn parse_location(&self, input: &str) -> Location {
         let mut output = Location {

@@ -32,8 +32,9 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
-    /// let mut location = Location {
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
+    /// let mut location = geo_rs::nodes::Location {
     ///     city: None,
     ///     state: None,
     ///     country: None,
@@ -41,8 +42,9 @@ impl Parser {
     ///     address: None,
     /// };
     /// parser.find_state(&mut location, "Toronto, ON, CA");
-    /// assert_eq!(location.state.code, String::from("ON"));
-    /// assert_eq!(location.state.name, String::from("Ontario"));
+    /// let state = location.state.unwrap();
+    /// assert_eq!(state.code, String::from("ON"));
+    /// assert_eq!(state.name, String::from("Ontario"));
     /// ```
     pub fn find_state(&self, location: &mut Location, input: &str) {
         if input.chars().count() == 0 {
@@ -74,23 +76,46 @@ impl Parser {
                 }
             }
         }
+        let mut candidates: Vec<(State, Country)> = vec![];
         for c in &countries {
             if let Some(states) = self.states.get(&c.code) {
                 for part in &parts {
                     for (code, name) in &states.code_to_name {
                         if code == &part.to_uppercase().to_string() {
-                            location.state = Some(State {
+                            let state = State {
                                 code: code.clone(),
                                 name: name.clone(),
-                            });
-                            if location.country.is_none() {
-                                location.country = Some(c.clone());
-                            }
-                            return;
+                            };
+                            candidates.push((state, c.clone()));
                         }
                     }
                 }
             };
+        }
+        // When analyzing locations such as `Sherwood Park, AB, CA`
+        // we may end up having more than one state, in that case
+        // use the one that doesn't look like a country
+        match candidates.len() {
+            0 => (),
+            1 => {
+                location.state = Some(candidates.first().unwrap().0.clone());
+                if location.country.is_none() {
+                    location.country = Some(candidates.first().unwrap().1.clone());
+                }
+            }
+            _ => {
+                let country_codes: Vec<String> = countries.iter().map(|x| x.code.clone()).collect();
+                let filtered_candidates: Vec<(State, Country)> = candidates
+                    .into_iter()
+                    .filter(|(x, _)| !country_codes.contains(&x.code))
+                    .collect();
+                if filtered_candidates.len() == 1 {
+                    location.state = Some(filtered_candidates.first().unwrap().0.clone());
+                    if location.country.is_none() {
+                        location.country = Some(filtered_candidates.first().unwrap().1.clone());
+                    }
+                }
+            }
         }
     }
 
@@ -104,14 +129,19 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
-    /// let mut location = String::from("New York, NY, US");
-    /// let state = State {
-    ///     code: String::from("NY"),
-    ///     name: String::from("New York"),
-    /// })
-    /// parser.remove_state(&state, &mut location);
-    /// assert_eq!(location, String::from("New York, US"));
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
+    /// let mut location = String::from("Los Angeles, CA, US");
+    /// let state = geo_rs::nodes::State {
+    ///     code: String::from("CA"),
+    ///     name: String::from("California"),
+    /// };
+    /// let country = geo_rs::nodes::Country {
+    ///     code: String::from("US"),
+    ///     name: String::from("United States"),
+    /// };
+    /// parser.remove_state(&state, &country, &mut location);
+    /// assert_eq!(location, String::from("Los Angeles, US"));
     /// ```
     pub fn remove_state(&self, state: &State, country: &Country, input: &mut String) {
         if input.contains(&state.code) {
@@ -145,17 +175,18 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
     /// let state_code = "CA";
-    /// let country = Country { code: String::from("US"), name: String::from("United States") };
-    /// let state = parser.state_from_code(&country, &state_code);
-    /// assert_eq!(state.unwrap().code, String::from("CA"));
-    /// assert_eq!(state.unwrap().name, String::from("California"));
+    /// let country = Some(geo_rs::nodes::Country { code: String::from("US"), name: String::from("United States") });
+    /// let state = parser.state_from_code(&country, &state_code).unwrap();
+    /// assert_eq!(state.code, String::from("CA"));
+    /// assert_eq!(state.name, String::from("California"));
     /// let state_code = "ON";
     /// let country = None;
-    /// let state = parser.state_from_code(&country, &state_code);
-    /// assert_eq!(state.unwrap().code, String::from("ON"));
-    /// assert_eq!(state.unwrap().name, String::from("Ontario"));
+    /// let state = parser.state_from_code(&country, &state_code).unwrap();
+    /// assert_eq!(state.code, String::from("ON"));
+    /// assert_eq!(state.name, String::from("Ontario"));
     /// ```
     pub fn state_from_code(&self, country: &Option<Country>, input: &str) -> Option<State> {
         let countries = match country {
@@ -229,8 +260,8 @@ pub type CountryStates = HashMap<String, StatesMap>;
 /// # Examples
 ///
 /// ```
-/// use crate::nodes::read_states;
-/// let states = read_states();
+/// use geo_rs;
+/// let states = geo_rs::nodes::read_states();
 /// ```
 pub fn read_states() -> HashMap<String, StatesMap> {
     let mut data: HashMap<String, StatesMap> = HashMap::new();
@@ -259,6 +290,7 @@ pub fn read_states() -> HashMap<String, StatesMap> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mocks;
 
     #[test]
     fn test_read_states() {
@@ -294,50 +326,10 @@ mod tests {
         assert_eq!(format!("{}", state), "ON");
     }
 
-    fn get_states() -> HashMap<&'static str, Option<State>> {
-        let mut states: HashMap<&str, Option<State>> = HashMap::new();
-        states.insert(
-            "Jacksonville, Florida, USA",
-            Some(State {
-                code: String::from("FL"),
-                name: String::from("Florida"),
-            }),
-        );
-        states.insert(
-            "Lansing, MI, US, 48911",
-            Some(State {
-                code: String::from("MI"),
-                name: String::from("Michigan"),
-            }),
-        );
-        states.insert(
-            "New Westminster, British Columbia, Canada",
-            Some(State {
-                code: String::from("BC"),
-                name: String::from("British Columbia"),
-            }),
-        );
-        states.insert(
-            "New York, NY, US",
-            Some(State {
-                code: String::from("NY"),
-                name: String::from("New York"),
-            }),
-        );
-        states.insert(
-            "United States-District of Columbia-washington-20340-DCCL",
-            Some(State {
-                code: String::from("DC"),
-                name: String::from("District Of Columbia"),
-            }),
-        );
-        states
-    }
-
     #[test]
     fn test_find_state() {
         let parser = Parser::new();
-        for (input, output) in get_states() {
+        for (input, output) in mocks::get_mocks() {
             let mut location = Location {
                 city: None,
                 state: None,
@@ -346,7 +338,7 @@ mod tests {
                 address: None,
             };
             parser.find_state(&mut location, &input);
-            assert_eq!(location.state, output);
+            assert_eq!(location.state, output.1, "input: {}", input);
         }
     }
 
@@ -473,7 +465,7 @@ mod tests {
         let parser = Parser::new();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for state in get_states().keys() {
+            for state in mocks::get_mocks().keys() {
                 let mut location = Location {
                     city: None,
                     state: None,
@@ -487,7 +479,7 @@ mod tests {
         println!(
             "Elapsed time: {:.2?}, {:.2?} each",
             before.elapsed(),
-            before.elapsed() / (n * get_states().len() as u32)
+            before.elapsed() / (n * mocks::get_mocks().len() as u32)
         );
     }
 }

@@ -43,8 +43,9 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// # Examples
 ///
 /// ```
+/// use geo_rs;
 /// let mut s = String::from("!(#3)Toronto ,");
-/// clean(&mut s);
+/// geo_rs::utils::clean(&mut s);
 /// assert_eq!(s, String::from("Toronto"));
 /// ```
 pub fn clean(s: &mut String) {
@@ -89,9 +90,10 @@ pub fn split(s: &str) -> Vec<&str> {
 /// # Examples
 ///
 /// ```
-/// let countries = get_countries(None);
-/// assert_eq(countries[0].code, "US".to_string());
-/// assert_eq(countries[1].code, "CA".to_string());
+/// use geo_rs;
+/// let countries = geo_rs::utils::get_countries(&None);
+/// assert_eq!(countries[0].code, "US".to_string());
+/// assert_eq!(countries[1].code, "CA".to_string());
 /// ```
 pub fn get_countries(country: &Option<Country>) -> Vec<Country> {
     let us = Country {

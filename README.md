@@ -59,3 +59,4 @@ assert_eq!(format!("{}", location_parsed), String::from("Oakville, ON, CA"))
   - Extract street address part
   - Support other countries
   - Be able to specify in Cargo.toml a list of countries
+  - Specify format of the output

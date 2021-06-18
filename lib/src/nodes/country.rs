@@ -51,8 +51,9 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
-    /// let mut location = Location {
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
+    /// let mut location = geo_rs::nodes::Location {
     ///     city: None,
     ///     state: None,
     ///     country: None,
@@ -60,8 +61,7 @@ impl Parser {
     ///     address: None,
     /// };
     /// parser.find_country(&mut location, "Toronto, ON, CA");
-    /// assert_eq!(location.country.code, String::from("CA"));
-    /// assert_eq!(location.country.name, String::from("Canada"));
+    /// assert_eq!(location.country, Some(geo_rs::nodes::CANADA.clone()));
     /// ```
     pub fn find_country(&self, location: &mut Location, input: &str) {
         if input.chars().count() == 0 {
@@ -129,12 +129,13 @@ impl Parser {
     /// # Examples
     ///
     /// ```
-    /// let parser = Parser::new();
+    /// use geo_rs;
+    /// let parser = geo_rs::Parser::new();
     /// let mut location = String::from("New York, NY, US");
-    /// let country = Country {
+    /// let country = geo_rs::nodes::Country {
     ///     code: String::from("US"),
     ///     name: String::from("United States"),
-    /// })
+    /// };
     /// parser.remove_country(&country, &mut location);
     /// assert_eq!(location, String::from("New York, NY"));
     /// ```
@@ -168,7 +169,8 @@ impl Parser {
 /// # Examples
 ///
 /// ```
-/// let countries = read_countries();
+/// use geo_rs;
+/// let countries = geo_rs::nodes::read_countries();
 /// ```
 pub fn read_countries() -> CountriesMap {
     let mut name_to_code: HashMap<String, String> = HashMap::new();
@@ -189,7 +191,7 @@ pub fn read_countries() -> CountriesMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use crate::mocks;
 
     #[test]
     fn test_ca() {
@@ -212,25 +214,10 @@ mod tests {
         assert_eq!(format!("{}", country), "US");
     }
 
-    fn get_countries() -> HashMap<&'static str, Option<Country>> {
-        let mut countries: HashMap<&str, Option<Country>> = HashMap::new();
-        countries.insert("Lansing, MI", None);
-        countries.insert("Lansing, MI, US, 48911", Some(UNITED_STATES.clone()));
-        countries.insert("Jacksonville, Florida, USA", Some(UNITED_STATES.clone()));
-        countries.insert("manati, pr, us", Some(UNITED_STATES.clone()));
-        countries.insert("United States-Alaska-Shemya", Some(UNITED_STATES.clone()));
-        countries.insert("Toronto, ON, CA", Some(CANADA.clone()));
-        countries.insert("British Columbia, Canada", Some(CANADA.clone()));
-        countries.insert("Sherwood Park, AB, CA, T8A 3H9", Some(CANADA.clone()));
-        countries.insert("Los Angeles, CA", Some(UNITED_STATES.clone()));
-        countries.insert("ON, CA", Some(CANADA.clone()));
-        countries
-    }
-
     #[test]
     fn test_find_country() {
         let parser = Parser::new();
-        for (input, output) in get_countries() {
+        for (input, output) in mocks::get_mocks() {
             let mut location = Location {
                 city: None,
                 state: None,
@@ -239,7 +226,7 @@ mod tests {
                 address: None,
             };
             parser.find_country(&mut location, &input);
-            assert_eq!(location.country, output);
+            assert_eq!(location.country, output.2, "input: {}", input);
         }
     }
 
@@ -272,7 +259,7 @@ mod tests {
         let parser = Parser::new();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for country in get_countries().keys() {
+            for country in mocks::get_mocks().keys() {
                 let mut location = Location {
                     city: None,
                     state: None,
@@ -286,7 +273,7 @@ mod tests {
         println!(
             "Elapsed time: {:.2?}, {:.2?} each",
             before.elapsed(),
-            before.elapsed() / (n * get_countries().len() as u32)
+            before.elapsed() / (n * mocks::get_mocks().len() as u32)
         );
     }
 }

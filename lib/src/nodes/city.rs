@@ -103,7 +103,8 @@ pub type CountryCities = HashMap<String, CitiesMap>;
 /// # Examples
 ///
 /// ```
-/// let states = read_states();
+/// use geo_rs;
+/// let states = geo_rs::nodes::read_states();
 /// ```
 pub fn read_cities() -> HashMap<String, CitiesMap> {
     let mut data: HashMap<String, CitiesMap> = HashMap::new();
