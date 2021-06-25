@@ -51,11 +51,11 @@ impl Parser {
     ///     zipcode: None,
     ///     address: None,
     /// };
-    /// parser.find_zipcode(&mut location, "Saint-Lin-Laurentides, QC J5M 0G3");
+    /// parser.fill_zipcode(&mut location, "Saint-Lin-Laurentides, QC J5M 0G3");
     /// assert_eq!(location.zipcode.unwrap().zipcode, String::from("J5M 0G3"));
     /// assert_eq!(location.country.unwrap().code, String::from("CA"));
     /// ```
-    pub fn find_zipcode(&self, location: &mut Location, input: &str) {
+    pub fn fill_zipcode(&self, location: &mut Location, input: &str) {
         if input.chars().count() == 0 {
             return;
         }
@@ -115,7 +115,7 @@ mod tests {
     use crate::mocks;
 
     #[test]
-    fn test_find_zipcode() {
+    fn test_fill_zipcode() {
         let parser = Parser::new();
         for (input, output) in mocks::get_mocks() {
             let mut location = Location {
@@ -125,7 +125,7 @@ mod tests {
                 zipcode: None,
                 address: None,
             };
-            parser.find_zipcode(&mut location, &input);
+            parser.fill_zipcode(&mut location, &input);
             assert_eq!(location.zipcode, output.3, "input: {}", input);
         }
     }
@@ -155,10 +155,10 @@ mod tests {
         assert_eq!(format!("{}", zipcode), "J5M0G3");
     }
 
-    /// cargo test benchmark_find_zipcode -- --nocapture --ignored
+    /// cargo test benchmark_fill_zipcode -- --nocapture --ignored
     #[test]
     #[ignore]
-    fn benchmark_find_zipcode() {
+    fn benchmark_fill_zipcode() {
         let n = 250;
         let parser = Parser::new();
         let before = std::time::Instant::now();
@@ -171,7 +171,7 @@ mod tests {
                     zipcode: None,
                     address: None,
                 };
-                parser.find_zipcode(&mut location, &zipcode);
+                parser.fill_zipcode(&mut location, &zipcode);
             }
         }
         println!(

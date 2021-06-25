@@ -13,6 +13,8 @@ lazy_static! {
     static ref RE_SPLITTER1: Regex = Regex::new(r"[^a-zA-Z0-9\s-]").unwrap();
     static ref RE_SPLITTER2: Regex = Regex::new(r"[^a-zA-Z0-9]").unwrap();
     static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
+    static ref RE_ABBREVIATIONS: Regex =
+        Regex::new(r"\b(?:[A-Z]{3,5}\b|(?:[A-Za-z]\.){3,})\s*").unwrap();
 }
 
 /// Read file with the given name from `src/data` folder and return `std::io::Lines`
@@ -49,6 +51,7 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// assert_eq!(s, String::from("Toronto"));
 /// ```
 pub fn clean(s: &mut String) {
+    *s = RE_ABBREVIATIONS.replace_all(&s, "").to_string();
     *s = RE_BRACKETS.replace_all(&s, "").to_string();
     *s = RE_LEADING.replace_all(&s, "").to_string();
     *s = RE_TRAILING.replace_all(&s, "").to_string();
@@ -125,6 +128,12 @@ mod tests {
         let mut s = "Dundas St W (Store# 04278)".to_string();
         clean(&mut s);
         assert_eq!(s, "Dundas St W".to_string());
+        let mut s = "United States-District of Columbia-washington-20340-DCCL".to_string();
+        clean(&mut s);
+        assert_eq!(
+            s,
+            "United States-District of Columbia-washington-20340".to_string()
+        );
     }
 
     #[test]

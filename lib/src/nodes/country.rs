@@ -60,10 +60,10 @@ impl Parser {
     ///     zipcode: None,
     ///     address: None,
     /// };
-    /// parser.find_country(&mut location, "Toronto, ON, CA");
+    /// parser.fill_country(&mut location, "Toronto, ON, CA");
     /// assert_eq!(location.country, Some(geo_rs::nodes::CANADA.clone()));
     /// ```
-    pub fn find_country(&self, location: &mut Location, input: &str) {
+    pub fn fill_country(&self, location: &mut Location, input: &str) {
         if input.chars().count() == 0 {
             return;
         }
@@ -215,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_country() {
+    fn test_fill_country() {
         let parser = Parser::new();
         for (input, output) in mocks::get_mocks() {
             let mut location = Location {
@@ -225,7 +225,7 @@ mod tests {
                 zipcode: None,
                 address: None,
             };
-            parser.find_country(&mut location, &input);
+            parser.fill_country(&mut location, &input);
             assert_eq!(location.country, output.2, "input: {}", input);
         }
     }
@@ -251,10 +251,10 @@ mod tests {
         assert_eq!(location, String::from("Lansing, MI"));
     }
 
-    /// cargo test benchmark_find_country -- --nocapture --ignored
+    /// cargo test benchmark_fill_country -- --nocapture --ignored
     #[test]
     #[ignore]
-    fn benchmark_find_country() {
+    fn benchmark_fill_country() {
         let n = 250;
         let parser = Parser::new();
         let before = std::time::Instant::now();
@@ -267,7 +267,7 @@ mod tests {
                     zipcode: None,
                     address: None,
                 };
-                parser.find_country(&mut location, &country);
+                parser.fill_country(&mut location, &country);
             }
         }
         println!(

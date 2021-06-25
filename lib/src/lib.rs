@@ -53,28 +53,26 @@ impl Parser {
         utils::clean(&mut input_copy);
         let mut remainder = input_copy.clone();
         debug!("input value: {}", remainder);
-        self.find_zipcode(&mut output, &remainder);
+        self.fill_zipcode(&mut output, &remainder);
         if let Some(z) = &output.zipcode {
             self.remove_zipcode(z, &mut remainder);
             if let Some(c) = &output.country {
                 self.remove_country(c, &mut remainder);
             }
         }
-        self.find_country(&mut output, &remainder);
+        self.fill_country(&mut output, &remainder);
         if let Some(c) = &output.country {
             self.remove_country(c, &mut remainder);
         }
-        self.find_state(&mut output, &remainder);
+        self.fill_state(&mut output, &remainder);
         if let (Some(s), Some(c)) = (&output.state, &output.country) {
             self.remove_state(s, c, &mut remainder);
             self.remove_country(c, &mut remainder);
         }
-        if &output.country.is_some() | &output.state.is_some() {
-            let city = self.find_city(&remainder, &output.state, &output.country);
-            if let Some(c) = city.as_ref() {
-                output.city = city.clone();
-                self.remove_city(&mut remainder, &c);
-            }
+        self.fill_city(&mut output, &remainder);
+        if let Some(c) = output.city {
+            output.city = Some(c.clone());
+            self.remove_city(&mut remainder, &c);
         }
         debug!("output value: {}, remainder: {}", output, remainder);
         output
@@ -84,7 +82,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nodes::{City, Country, State, Zipcode};
+    use crate::mocks;
     use std::collections::HashMap;
 
     #[test]
@@ -176,113 +174,17 @@ mod tests {
         }
     }
 
-    fn get_locations() -> HashMap<&'static str, Location> {
-        let mut locations: HashMap<&str, Location> = HashMap::new();
-        locations.insert(
-            "BUFFALO, New York, US",
-            Location {
-                city: Some(City {
-                    name: String::from("Buffalo"),
-                    state: Some(String::from("NY")),
-                }),
-                state: Some(State {
-                    code: String::from("NY"),
-                    name: String::from("New York"),
-                }),
-                country: Some(Country {
-                    code: String::from("US"),
-                    name: String::from("United States"),
-                }),
-                zipcode: None,
-                address: None,
-            },
-        );
-        locations.insert(
-            "Lansing, MI, US, 48911",
-            Location {
-                city: Some(City {
-                    name: String::from("Lansing"),
-                    state: Some(String::from("MI")),
-                }),
-                state: Some(State {
-                    code: String::from("MI"),
-                    name: String::from("Michigan"),
-                }),
-                country: Some(Country {
-                    code: String::from("US"),
-                    name: String::from("United States"),
-                }),
-                zipcode: Some(Zipcode {
-                    zipcode: String::from("48911"),
-                }),
-                address: None,
-            },
-        );
-        // locations.insert(
-        //     "Sausalito, US",
-        //     Location {
-        //         city: Some(City {
-        //             name: String::from("Sausalito"),
-        //             state: Some(String::from("CA")),
-        //         }),
-        //         state: Some(State {
-        //             code: String::from("CA"),
-        //             name: String::from("California"),
-        //         }),
-        //         country: Some(Country {
-        //             code: String::from("US"),
-        //             name: String::from("United States"),
-        //         }),
-        //         zipcode: None,
-        //         address: None,
-        //     },
-        // );
-        locations.insert(
-            "Toronto, ON, CA",
-            Location {
-                city: Some(City {
-                    name: String::from("Toronto"),
-                    state: Some(String::from("ON")),
-                }),
-                state: Some(State {
-                    code: String::from("ON"),
-                    name: String::from("Ontario"),
-                }),
-                country: Some(Country {
-                    code: String::from("CA"),
-                    name: String::from("Canada"),
-                }),
-                zipcode: None,
-                address: None,
-            },
-        );
-        // locations.insert(
-        //     "Lansing, US",
-        //     Location {
-        //         city: None,
-        //         state: None,
-        //         country: Some(Country {
-        //             code: String::from("US"),
-        //             name: String::from("United States"),
-        //         }),
-        //         zipcode: None,
-        //         address: None,
-        //     },
-        // );
-        locations
-    }
-
     #[test]
     fn test_parse_location() {
         let parser = Parser::new();
-        for (k, v) in get_locations() {
-            let location = parser.parse_location(&k);
-            assert_eq!(location, v, "{}", k);
+        for (input, (_, _, _, _, _, output)) in mocks::get_mocks() {
+            let location = parser.parse_location(input);
+            assert_eq!(location.to_string(), output);
         }
     }
 
     /// cargo test benchmark_parse_location -- --nocapture --ignored
-    /// 9.5ms -> 3.77ms -> ~1ms -> ~1.8ms
+    /// 9.5ms -> 3.77ms -> ~1ms -> ~1.8ms -> 0.7ms (laptop) -> 1ms (laptop)
     #[test]
     #[ignore]
     fn benchmark_parse_location() {
@@ -290,14 +192,14 @@ mod tests {
         let parser = Parser::new();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for location_string in get_locations().keys() {
-                parser.parse_location(&location_string);
+            for input in mocks::get_mocks().keys() {
+                parser.parse_location(input);
             }
         }
         println!(
             "Elapsed time: {:.2?}, {:.2?} each",
             before.elapsed(),
-            before.elapsed() / (n * get_locations().len() as u32)
+            before.elapsed() / (n * mocks::get_mocks().len() as u32)
         );
     }
 }

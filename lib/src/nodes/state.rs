@@ -41,12 +41,12 @@ impl Parser {
     ///     zipcode: None,
     ///     address: None,
     /// };
-    /// parser.find_state(&mut location, "Toronto, ON, CA");
+    /// parser.fill_state(&mut location, "Toronto, ON, CA");
     /// let state = location.state.unwrap();
     /// assert_eq!(state.code, String::from("ON"));
     /// assert_eq!(state.name, String::from("Ontario"));
     /// ```
-    pub fn find_state(&self, location: &mut Location, input: &str) {
+    pub fn fill_state(&self, location: &mut Location, input: &str) {
         if input.chars().count() == 0 {
             return;
         }
@@ -144,25 +144,49 @@ impl Parser {
     /// assert_eq!(location, String::from("Los Angeles, US"));
     /// ```
     pub fn remove_state(&self, state: &State, country: &Country, input: &mut String) {
-        if input.contains(&state.code) {
-            *input = input.replace(&state.code, "");
-        }
-        if input.contains(&state.name) {
-            // remove name only if it's not a part of cities
-            // for example, if we remove both "CO" and "Colorado"
-            // we may accidentally remove part of "Colorado Springs" city
+        // first of all, remove state code from the input string
+        // make sure to not remove parts, e.g. for location
+        // Washington-20340-DCCL we want to keep DCCL untouched
+        // without removing DC out of it
+        *input = input
+            .split_whitespace()
+            .filter(|s| s != &state.code.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        if let Some(p) = input.to_lowercase().find(&state.name.to_lowercase()) {
+            // remove state name only if it's not a part of cities
+            // for example, when we parse "Colorado Springs, CO, US"
+            // we want to remove "CO" but not "Colorado" because it's a city
             if let Some(country_cities) = self.cities.get(&country.code) {
                 if let Some(state_cities) = country_cities.cities_by_state.get(&state.code) {
-                    let cities_as_string = state_cities.join(", ");
-                    let words = cities_as_string.split(" ").collect::<Vec<&str>>();
-                    if !words.contains(&state.name.as_str()) {
-                        *input = input.replace(&state.name, "");
+                    if state_cities.iter().all(|s| {
+                        let parts = s.split_whitespace().collect::<Vec<_>>();
+                        state
+                            .name
+                            .to_lowercase()
+                            .split_whitespace()
+                            .all(|s| !parts.contains(&s))
+                    }) {
+                        input.replace_range(p..p + state.name.chars().count(), "");
                     }
                 }
             }
         }
         utils::clean(input);
         debug!("after removing state: {}", input);
+    }
+
+    /// TODO
+    pub fn fill_country_from_state(&self, location: &mut Location) {
+        if let Some(s) = &location.state {
+            for country in utils::get_countries(&None) {
+                if let Some(country_states) = self.states.get(&country.code) {
+                    if country_states.code_to_name.get(&s.code).is_some() {
+                        location.country = Some(country.clone());
+                    }
+                }
+            }
+        }
     }
 
     /// Return a State struct that match the given state code.
@@ -208,7 +232,7 @@ impl Parser {
         None
     }
 
-    // pub fn find_country_from_state(&self, state: &State) -> Option<Country> {
+    // pub fn fill_country_from_state(&self, state: &State) -> Option<Country> {
     //     let countries = utils::get_countries(&None);
     //     for c in &countries {
     //         if let Some(states) = self.states.get(&c.code) {
@@ -327,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_state() {
+    fn test_fill_state() {
         let parser = Parser::new();
         for (input, output) in mocks::get_mocks() {
             let mut location = Location {
@@ -337,7 +361,7 @@ mod tests {
                 zipcode: None,
                 address: None,
             };
-            parser.find_state(&mut location, &input);
+            parser.fill_state(&mut location, &input);
             assert_eq!(location.state, output.1, "input: {}", input);
         }
     }
@@ -372,37 +396,54 @@ mod tests {
     #[test]
     fn test_remove_state() {
         let parser = Parser::new();
+        // let state = State {
+        //     code: String::from("AB"),
+        //     name: String::from("Alberta"),
+        // };
+        // let mut location = String::from("Sherwood Park, AB, CA");
+        // parser.remove_state(&state, &CANADA.clone(), &mut location);
+        // assert_eq!(location, String::from("Sherwood Park, CA"));
+        // let state = State {
+        //     code: String::from("ON"),
+        //     name: String::from("Ontario"),
+        // };
+        // let mut location = String::from("Toronto, ON, CA");
+        // parser.remove_state(&state, &CANADA.clone(), &mut location);
+        // assert_eq!(location, String::from("Toronto, CA"));
+        // let state = State {
+        //     code: String::from("CA"),
+        //     name: String::from("California"),
+        // };
+        // let mut location = String::from("United States-San Diego-US CA San Diego");
+        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        // assert_eq!(
+        //     location,
+        //     String::from("United States-San Diego-US San Diego")
+        // );
+        // let state = State {
+        //     code: String::from("CO"),
+        //     name: String::from("Colorado"),
+        // };
+        // let mut location = String::from("Colorado Springs, CO, US");
+        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        // assert_eq!(location, String::from("Colorado Springs, US"));
+        // let state = State {
+        //     code: String::from("NY"),
+        //     name: String::from("New York"),
+        // };
+        // let mut location = String::from("New York, NY, US");
+        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        // assert_eq!(location, String::from("New York, US"));
         let state = State {
-            code: String::from("AB"),
-            name: String::from("Alberta"),
+            code: String::from("DC"),
+            name: String::from("District Of Columbia"),
         };
-        let mut location = String::from("Sherwood Park, AB, CA");
-        parser.remove_state(&state, &CANADA.clone(), &mut location);
-        assert_eq!(location, String::from("Sherwood Park, CA"));
-        let state = State {
-            code: String::from("ON"),
-            name: String::from("Ontario"),
-        };
-        let mut location = String::from("Toronto, ON, CA");
-        parser.remove_state(&state, &CANADA.clone(), &mut location);
-        assert_eq!(location, String::from("Toronto, CA"));
-        let state = State {
-            code: String::from("CA"),
-            name: String::from("California"),
-        };
-        let mut location = String::from("United States-California-San Diego-US CA San Diego");
+        let mut location = String::from("United States-District of Columbia-washington-20340-DCCL");
         parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
         assert_eq!(
             location,
-            String::from("United States-California-San Diego-US San Diego")
+            String::from("United States-washington-20340-DCCL")
         );
-        let state = State {
-            code: String::from("CO"),
-            name: String::from("Colorado"),
-        };
-        let mut location = String::from("Colorado Springs, CO, US");
-        parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
-        assert_eq!(location, String::from("Colorado Springs, US"));
     }
 
     #[test]
@@ -421,7 +462,7 @@ mod tests {
     }
 
     // #[test]
-    // fn test_find_country_from_state() {
+    // fn test_fill_country_from_state() {
     //     let mut states: HashMap<State, Option<Country>> = HashMap::new();
     //     states.insert(
     //         State {
@@ -452,20 +493,20 @@ mod tests {
     //     );
     //     let parser = Parser::new();
     //     for (state, country) in states {
-    //         let output = parser.find_country_from_state(&state);
+    //         let output = parser.fill_country_from_state(&state);
     //         assert_eq!(output, country);
     //     }
     // }
 
-    /// cargo test benchmark_find_state -- --nocapture --ignored
+    /// cargo test benchmark_fill_state -- --nocapture --ignored
     #[test]
     #[ignore]
-    fn benchmark_find_state() {
+    fn benchmark_fill_state() {
         let n = 250;
         let parser = Parser::new();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for state in mocks::get_mocks().keys() {
+            for input in mocks::get_mocks().keys() {
                 let mut location = Location {
                     city: None,
                     state: None,
@@ -473,7 +514,7 @@ mod tests {
                     zipcode: None,
                     address: None,
                 };
-                parser.find_state(&mut location, &state);
+                parser.fill_state(&mut location, &input);
             }
         }
         println!(

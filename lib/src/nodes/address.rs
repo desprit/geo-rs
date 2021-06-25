@@ -25,7 +25,7 @@ impl Parser {
         utils::clean(s);
     }
 
-    pub fn find_address(&self, s: &str) -> Option<Address> {
+    pub fn fill_address(&self, s: &str) -> Option<Address> {
         Some(Address {
             address: s.to_string(),
         })
@@ -46,7 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_address() {
+    fn test_fill_address() {
         let mut addresses: HashMap<&str, Option<Address>> = HashMap::new();
         addresses.insert(
             "Kent Atholville 44",
@@ -56,7 +56,7 @@ mod tests {
         );
         let parser = Parser::new();
         for (input, address) in addresses {
-            let output = parser.find_address(&input);
+            let output = parser.fill_address(&input);
             assert_eq!(output, address);
         }
     }

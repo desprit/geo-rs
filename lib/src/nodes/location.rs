@@ -76,7 +76,6 @@ mod tests {
         let location = Location {
             city: Some(City {
                 name: String::from("Toronto"),
-                state: Some(String::from("ON")),
             }),
             state: Some(State {
                 code: String::from("ON"),
@@ -90,7 +89,6 @@ mod tests {
         let location = Location {
             city: Some(City {
                 name: String::from("Toronto"),
-                state: Some(String::from("ON")),
             }),
             state: None,
             country: None,
@@ -101,7 +99,6 @@ mod tests {
         let location = Location {
             city: Some(City {
                 name: String::from("Sausalito"),
-                state: None,
             }),
             state: None,
             country: Some(UNITED_STATES.clone()),
@@ -112,7 +109,6 @@ mod tests {
         let location = Location {
             city: Some(City {
                 name: String::from("Toronto"),
-                state: Some(String::from("ON")),
             }),
             state: None,
             country: None,

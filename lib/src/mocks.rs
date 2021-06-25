@@ -20,11 +20,26 @@ type Output = (
 pub fn get_mocks() -> HashMap<Input, Output> {
     let mut locations: HashMap<Input, Output> = HashMap::new();
     locations.insert(
+        "Washington D.C.",
+        (
+            Some(City {
+                name: String::from("Washington"),
+            }),
+            Some(State {
+                code: String::from("DC"),
+                name: String::from("District Of Columbia"),
+            }),
+            None,
+            None,
+            None,
+            "Buffalo, NY, US",
+        ),
+    );
+    locations.insert(
         "BUFFALO, New York, US",
         (
             Some(City {
                 name: String::from("Buffalo"),
-                state: Some(String::from("NY")),
             }),
             Some(State {
                 code: String::from("NY"),
@@ -40,35 +55,15 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "Lansing, MI, US, 48911",
-        (
-            Some(City {
-                name: String::from("Lansing"),
-                state: Some(String::from("MI")),
-            }),
-            Some(State {
-                code: String::from("MI"),
-                name: String::from("Michigan"),
-            }),
-            Some(Country {
-                code: String::from("US"),
-                name: String::from("United States"),
-            }),
-            Some(Zipcode {
-                zipcode: String::from("48911"),
-            }),
-            None,
-            "Lansing, MI, US, 48911",
-        ),
-    );
-    locations.insert(
-        "Sausalito, US",
+        "Sausalito",
         (
             Some(City {
                 name: String::from("Sausalito"),
-                state: Some(String::from("CA")),
             }),
-            None,
+            Some(State {
+                code: String::from("CA"),
+                name: String::from("California"),
+            }),
             Some(Country {
                 code: String::from("US"),
                 name: String::from("United States"),
@@ -79,12 +74,30 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "Toronto, ON, CA",
+        "United States-District of Columbia-washington-20340-DCCL",
         (
             Some(City {
-                name: String::from("Toronto"),
-                state: Some(String::from("ON")),
+                name: String::from("Washington"),
             }),
+            Some(State {
+                code: String::from("DC"),
+                name: String::from("District Of Columbia"),
+            }),
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
+            Some(Zipcode {
+                zipcode: String::from("20340"),
+            }),
+            None,
+            "Washington, DC, US",
+        ),
+    );
+    locations.insert(
+        "ON CA",
+        (
+            None,
             Some(State {
                 code: String::from("ON"),
                 name: String::from("Ontario"),
@@ -95,7 +108,92 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             }),
             None,
             None,
-            "Toronto, ON, CA",
+            "ON, CA",
+        ),
+    );
+    locations.insert(
+        "Los Angeles, CA",
+        (
+            Some(City {
+                name: String::from("Los Angeles"),
+            }),
+            Some(State {
+                code: String::from("CA"),
+                name: String::from("California"),
+            }),
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
+            None,
+            None,
+            "Los Angeles, CA, US",
+        ),
+    );
+    locations.insert(
+        "Saint-Lin-Laurentides, QC J5M 0G3",
+        (
+            Some(City {
+                name: String::from("Saint-Lin-Laurentides"),
+            }),
+            Some(State {
+                code: String::from("QC"),
+                name: String::from("Quebec"),
+            }),
+            None,
+            Some(Zipcode {
+                zipcode: String::from("J5M 0G3"),
+            }),
+            None,
+            "Saint-Lin-Laurentides, QC, CA, J5M0G3",
+        ),
+    );
+    locations.insert(
+        "Saint-Lin-Laurentides, QC 11111111",
+        (
+            Some(City {
+                name: String::from("Saint-Lin-Laurentides"),
+            }),
+            Some(State {
+                code: String::from("QC"),
+                name: String::from("Quebec"),
+            }),
+            None,
+            None,
+            None,
+            "Saint-Lin-Laurentides, QC, CA",
+        ),
+    );
+    locations.insert(
+        "Saint-Lin-Laurentides, QC",
+        (
+            Some(City {
+                name: String::from("Saint-Lin-Laurentides"),
+            }),
+            Some(State {
+                code: String::from("QC"),
+                name: String::from("Quebec"),
+            }),
+            None,
+            None,
+            None,
+            "Saint-Lin-Laurentides, QC, CA",
+        ),
+    );
+    locations.insert(
+        "Saint-Lin-Laurentides, QC J5MM 0G3",
+        (
+            Some(City {
+                name: String::from("Saint-Lin-Laurentides"),
+            }),
+            Some(State {
+                code: String::from("QC"),
+                name: String::from("Quebec"),
+            }),
+            None,
+            None,
+            None,
+            "Saint-Lin-Laurentides, QC, CA, J5MM0G3",
         ),
     );
     locations.insert(
@@ -113,62 +211,26 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "Saint-Lin-Laurentides, QC J5MM 0G3",
+        "Sausalito, US",
         (
             Some(City {
-                name: String::from("Saint-Lin-Laurentides"),
-                state: Some(String::from("QC")),
-            }),
-            Some(State {
-                code: String::from("QC"),
-                name: String::from("Quebec"),
+                name: String::from("Sausalito"),
             }),
             None,
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
             None,
             None,
-            "Saint-Lin-Laurentides, QC, CA, J5MM0G3",
+            "Sausalito, CA, US",
         ),
     );
     locations.insert(
-        "Saint-Lin-Laurentides, QC",
-        (
-            Some(City {
-                name: String::from("Saint-Lin-Laurentides"),
-                state: Some(String::from("QC")),
-            }),
-            Some(State {
-                code: String::from("QC"),
-                name: String::from("Quebec"),
-            }),
-            None,
-            None,
-            None,
-            "Saint-Lin-Laurentides, QC, CA",
-        ),
-    );
-    locations.insert(
-        "Saint-Lin-Laurentides, QC 11111111",
-        (
-            Some(City {
-                name: String::from("Saint-Lin-Laurentides"),
-                state: Some(String::from("QC")),
-            }),
-            Some(State {
-                code: String::from("QC"),
-                name: String::from("Quebec"),
-            }),
-            None,
-            None,
-            None,
-            "Saint-Lin-Laurentides, QC, CA",
-        ),
-    );
-    locations.insert(
-        "Lansing, MI, US",
+        "Lansing, MI, US, 48911",
         (
             Some(City {
                 name: String::from("Lansing"),
-                state: Some(String::from("MI")),
             }),
             Some(State {
                 code: String::from("MI"),
@@ -178,9 +240,30 @@ pub fn get_mocks() -> HashMap<Input, Output> {
                 code: String::from("US"),
                 name: String::from("United States"),
             }),
+            Some(Zipcode {
+                zipcode: String::from("48911"),
+            }),
+            None,
+            "Lansing, MI, US, 48911",
+        ),
+    );
+    locations.insert(
+        "Toronto, ON, CA",
+        (
+            Some(City {
+                name: String::from("Toronto"),
+            }),
+            Some(State {
+                code: String::from("ON"),
+                name: String::from("Ontario"),
+            }),
+            Some(Country {
+                code: String::from("CA"),
+                name: String::from("Canada"),
+            }),
             None,
             None,
-            "Lansing, MI, US",
+            "Toronto, ON, CA",
         ),
     );
     locations.insert(
@@ -188,7 +271,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("Lansing"),
-                state: Some(String::from("MI")),
             }),
             Some(State {
                 code: String::from("MI"),
@@ -208,7 +290,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("Lansing"),
-                state: Some(String::from("MI")),
             }),
             Some(State {
                 code: String::from("MI"),
@@ -228,7 +309,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("Lansing"),
-                state: Some(String::from("MI")),
             }),
             Some(State {
                 code: String::from("MI"),
@@ -246,30 +326,10 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "Saint-Lin-Laurentides, QC J5M 0G3",
-        (
-            Some(City {
-                name: String::from("Saint-Lin-Laurentides"),
-                state: Some(String::from("QC")),
-            }),
-            Some(State {
-                code: String::from("QC"),
-                name: String::from("Quebec"),
-            }),
-            None,
-            Some(Zipcode {
-                zipcode: String::from("J5M 0G3"),
-            }),
-            None,
-            "Saint-Lin-Laurentides, QC, CA, J5M0G3",
-        ),
-    );
-    locations.insert(
         "Sherwood Park, AB, CA, T8A3H9",
         (
             Some(City {
                 name: String::from("Sherwood Park"),
-                state: Some(String::from("AB")),
             }),
             Some(State {
                 code: String::from("AB"),
@@ -291,7 +351,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("Jacksonville"),
-                state: Some(String::from("FL")),
             }),
             Some(State {
                 code: String::from("FL"),
@@ -311,7 +370,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("Manati"),
-                state: Some(String::from("PR")),
             }),
             Some(State {
                 code: String::from("PR"),
@@ -329,7 +387,9 @@ pub fn get_mocks() -> HashMap<Input, Output> {
     locations.insert(
         "United States-Alaska-Shemya",
         (
-            None,
+            Some(City {
+                name: String::from("Shemya"),
+            }),
             Some(State {
                 code: String::from("AK"),
                 name: String::from("Alaska"),
@@ -340,7 +400,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             }),
             None,
             None,
-            "AK, US",
+            "Shemya, AK, US",
         ),
     );
     locations.insert(
@@ -361,48 +421,10 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "Los Angeles, CA",
-        (
-            Some(City {
-                name: String::from("Los Angeles"),
-                state: Some(String::from("CA")),
-            }),
-            Some(State {
-                code: String::from("CA"),
-                name: String::from("California"),
-            }),
-            Some(Country {
-                code: String::from("US"),
-                name: String::from("United States"),
-            }),
-            None,
-            None,
-            "Los Angeles, CA, US",
-        ),
-    );
-    locations.insert(
-        "ON CA",
-        (
-            None,
-            Some(State {
-                code: String::from("ON"),
-                name: String::from("Ontario"),
-            }),
-            Some(Country {
-                code: String::from("CA"),
-                name: String::from("Canada"),
-            }),
-            None,
-            None,
-            "ON, CA",
-        ),
-    );
-    locations.insert(
         "New Westminster, British Columbia, Canada",
         (
             Some(City {
                 name: String::from("New Westminster"),
-                state: Some(String::from("BC")),
             }),
             Some(State {
                 code: String::from("BC"),
@@ -422,7 +444,6 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         (
             Some(City {
                 name: String::from("New York"),
-                state: Some(String::from("NY")),
             }),
             Some(State {
                 code: String::from("NY"),
@@ -438,11 +459,10 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "United States-District of Columbia-washington-20340-DCCL",
+        "United States-District of Columbia-washington-20340",
         (
             Some(City {
                 name: String::from("Washington"),
-                state: Some(String::from("DC")),
             }),
             Some(State {
                 code: String::from("DC"),
@@ -459,5 +479,26 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             "Washington, DC, US",
         ),
     );
+    // locations.insert(
+    //     "Offutt AFB, Nebraska -Offutt AFB, NE 68113 US",
+    //     (
+    //         Some(City {
+    //             name: String::from("Offutt AFB"),
+    //         }),
+    //         Some(State {
+    //             code: String::from("NE"),
+    //             name: String::from("Nebraska"),
+    //         }),
+    //         Some(Country {
+    //             code: String::from("US"),
+    //             name: String::from("United States"),
+    //         }),
+    //         Some(Zipcode {
+    //             zipcode: String::from("68113"),
+    //         }),
+    //         None,
+    //         "Offutt AFB, NE, US",
+    //     ),
+    // );
     locations
 }
