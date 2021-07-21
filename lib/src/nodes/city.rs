@@ -1,3 +1,5 @@
+use crate::nodes::country::UNITED_STATES;
+use crate::nodes::State;
 use crate::utils;
 use crate::{Location, Parser};
 use std::collections::HashMap;
@@ -27,19 +29,27 @@ impl Parser {
         utils::clean(s);
     }
 
-    /// TODO
-    pub fn find_special_case_city(&self, s: &str) -> Option<City> {
+    pub fn fill_special_case_city(&self, location: &mut Location, s: &str) {
         if s.to_lowercase().contains("district of columbia") {
-            return Some(City {
-                name: String::from("Washington"),
+            location.country = Some(UNITED_STATES.clone());
+            location.state = Some(State {
+                code: String::from("DC"),
+                name: String::from("District Of Columbia"),
             });
-        }
-        if s.to_lowercase().contains("d.c.") {
-            return Some(City {
+            location.city = Some(City {
                 name: String::from("Washington"),
-            });
+            })
         }
-        None
+        if s.to_lowercase().contains("d.c.") || s.to_lowercase().contains("d, c") {
+            location.country = Some(UNITED_STATES.clone());
+            location.state = Some(State {
+                code: String::from("DC"),
+                name: String::from("District Of Columbia"),
+            });
+            location.city = Some(City {
+                name: String::from("Washington"),
+            })
+        }
     }
 
     /// Parse location string and try to extract city out of it.
@@ -56,13 +66,13 @@ impl Parser {
     /// let parser = geo_rs::Parser::new();
     /// let mut location = geo_rs::nodes::Location {
     ///     city: None,
-    ///     state: Some(State { code: String::from("ON"), name: String::from("Ontario") }),
-    ///     country: Some(Country { code: String::from("CA"), name: String::from("Canada") }),
+    ///     state: Some(geo_rs::nodes::State { code: String::from("ON"), name: String::from("Ontario") }),
+    ///     country: Some(geo_rs::nodes::Country { code: String::from("CA"), name: String::from("Canada") }),
     ///     zipcode: None,
     ///     address: None,
     /// };
     /// parser.fill_city(&mut location, "Toronto, ON, CA");
-    /// let city = location.state.unwrap();
+    /// let city = location.city.unwrap();
     /// assert_eq!(city.name, String::from("Toronto"));
     /// ```
     pub fn fill_city(&self, location: &mut Location, input: &str) {
@@ -87,26 +97,50 @@ impl Parser {
             };
             if let Some(country_cities) = &self.cities.get(&c.code) {
                 let mut candidates: Vec<(String, String)> = vec![];
-                for s in states {
-                    if let Some(state_cities) = country_cities.cities_by_state.get(s) {
+                for s in &states {
+                    if let Some(state_cities) = country_cities.cities_by_state.get(*s) {
                         if state_cities.contains(&input_cleaned.to_string()) {
-                            candidates.push((s.clone(), input_cleaned.clone()))
+                            candidates.push((s.to_string(), input_cleaned.clone()))
                         }
                     }
                 }
-                if candidates.len() == 1 {
+                if candidates.len() == 0 {
+                    for s in states {
+                        if let Some(state_cities) = country_cities.cities_by_state.get(s) {
+                            for city in state_cities {
+                                let input_lowercase = input.to_lowercase();
+                                let parts_city: Vec<&str> = utils::split(city);
+                                let parts_input: Vec<&str> = utils::split(&input_lowercase);
+                                if parts_city
+                                    .iter()
+                                    .all(|p| parts_input.to_owned().contains(&p))
+                                {
+                                    candidates.push((s.to_string(), city.to_string()))
+                                }
+                            }
+                        }
+                    }
+                }
+                if candidates.len() >= 1 && candidates.len() < 3 {
+                    if candidates.len() > 1 {
+                        debug!(
+                            "Found 2+ candidates for a city {:?}: {:?}",
+                            input_cleaned, candidates
+                        );
+                    }
                     location.city = Some(City {
                         name: String::from(titlecase(candidates.first().unwrap().1.as_str())),
                     });
-                } else {
-                    debug!("Found 2+ candidates for a city {:?}", input_cleaned);
+                    if location.country.is_none() {
+                        location.country = Some(c.clone());
+                    }
+                    if location.state.is_none() {
+                        let state =
+                            self.state_from_code(&Some(c), candidates.first().unwrap().0.as_str());
+                        location.state = state;
+                    }
                 }
             }
-        }
-        if let Some(ct) = self.find_special_case_city(&input_cleaned) {
-            location.city = Some(City {
-                name: String::from(titlecase(&ct.name)),
-            });
         }
     }
 }
@@ -178,9 +212,9 @@ mod tests {
         assert!(ca_cities.cities_by_state.get("ON").is_some());
         assert!(ca_cities.state_of_city.get("Toronto").is_some());
         let ca_state_cities = ca_cities.cities_by_state.get("ON").unwrap();
-        assert!(ca_state_cities.contains(&"Toronto".to_string()));
+        assert!(ca_state_cities.contains(&"toronto".to_string()));
         let us_state_cities = us_cities.cities_by_state.get("NY").unwrap();
-        assert!(us_state_cities.contains(&"New York".to_string()));
+        assert!(us_state_cities.contains(&"new york".to_string()));
     }
 
     #[test]
@@ -196,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_special_case_city() {
+    fn test_fill_special_case_city() {
         let mut cities: HashMap<&str, Option<City>> = HashMap::new();
         cities.insert(
             "United States-District of Columbia-washington-20340-DCCL",
@@ -211,9 +245,16 @@ mod tests {
             }),
         );
         let parser = Parser::new();
+        let mut location = Location {
+            city: None,
+            state: None,
+            country: None,
+            zipcode: None,
+            address: None,
+        };
         for (input, city) in cities {
-            let output = parser.find_special_case_city(&input);
-            assert_eq!(output, city);
+            parser.fill_special_case_city(&mut location, &input);
+            assert_eq!(location.city, city);
         }
     }
 

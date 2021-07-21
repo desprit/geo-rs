@@ -50,7 +50,6 @@ impl Parser {
         if input.chars().count() == 0 {
             return;
         }
-        self.find_special_case_state(location, &input);
         if location.state.is_some() {
             return;
         }
@@ -172,11 +171,15 @@ impl Parser {
                 }
             }
         }
+        if utils::split(input).contains(&state.code.as_str()) {
+            if let Some(p) = input.find(&state.code) {
+                input.replace_range(p..p + state.code.chars().count(), "");
+            }
+        }
         utils::clean(input);
         debug!("after removing state: {}", input);
     }
 
-    /// TODO
     pub fn fill_country_from_state(&self, location: &mut Location) {
         if let Some(s) = &location.state {
             for country in utils::get_countries(&None) {
@@ -230,43 +233,6 @@ impl Parser {
             }
         }
         None
-    }
-
-    // pub fn fill_country_from_state(&self, state: &State) -> Option<Country> {
-    //     let countries = utils::get_countries(&None);
-    //     for c in &countries {
-    //         if let Some(states) = self.states.get(&c.code) {
-    //             for state_code in states.code_to_name.keys() {
-    //                 if state_code == &state.code {
-    //                     return Some(c.clone());
-    //                 }
-    //             }
-    //         };
-    //     }
-    //     None
-    // }
-
-    fn find_special_case_state(&self, location: &mut Location, input: &str) {
-        if input.to_lowercase().contains("district of columbia") {
-            location.state = Some(State {
-                code: String::from("DC"),
-                name: String::from("District Of Columbia"),
-            });
-            if location.country.is_none() {
-                location.country = Some(UNITED_STATES.clone())
-            }
-            return;
-        }
-        if input.to_lowercase().contains("d.c.") {
-            location.state = Some(State {
-                code: String::from("DC"),
-                name: String::from("District Of Columbia"),
-            });
-            if location.country.is_none() {
-                location.country = Some(UNITED_STATES.clone())
-            }
-            return;
-        }
     }
 }
 
@@ -361,89 +327,60 @@ mod tests {
                 zipcode: None,
                 address: None,
             };
+            parser.fill_special_case_city(&mut location, &input);
             parser.fill_state(&mut location, &input);
             assert_eq!(location.state, output.1, "input: {}", input);
         }
     }
 
     #[test]
-    fn test_find_special_case_state() {
-        let parser = Parser::new();
-        let input = "United States-District of Columbia-washington-20340-DCCL";
-        let mut location = Location {
-            city: None,
-            state: None,
-            country: None,
-            zipcode: None,
-            address: None,
-        };
-        parser.find_special_case_state(&mut location, &input);
-        assert_eq!(location.state.unwrap().code, String::from("DC"));
-        assert_eq!(location.country.unwrap().code, String::from("US"));
-        let input = "United States-washington d.c.-20340-DCCL";
-        let mut location = Location {
-            city: None,
-            state: None,
-            country: None,
-            zipcode: None,
-            address: None,
-        };
-        parser.find_special_case_state(&mut location, &input);
-        assert_eq!(location.state.unwrap().code, String::from("DC"));
-        assert_eq!(location.country.unwrap().code, String::from("US"));
-    }
-
-    #[test]
     fn test_remove_state() {
         let parser = Parser::new();
-        // let state = State {
-        //     code: String::from("AB"),
-        //     name: String::from("Alberta"),
-        // };
-        // let mut location = String::from("Sherwood Park, AB, CA");
-        // parser.remove_state(&state, &CANADA.clone(), &mut location);
-        // assert_eq!(location, String::from("Sherwood Park, CA"));
-        // let state = State {
-        //     code: String::from("ON"),
-        //     name: String::from("Ontario"),
-        // };
-        // let mut location = String::from("Toronto, ON, CA");
-        // parser.remove_state(&state, &CANADA.clone(), &mut location);
-        // assert_eq!(location, String::from("Toronto, CA"));
-        // let state = State {
-        //     code: String::from("CA"),
-        //     name: String::from("California"),
-        // };
-        // let mut location = String::from("United States-San Diego-US CA San Diego");
-        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
-        // assert_eq!(
-        //     location,
-        //     String::from("United States-San Diego-US San Diego")
-        // );
-        // let state = State {
-        //     code: String::from("CO"),
-        //     name: String::from("Colorado"),
-        // };
-        // let mut location = String::from("Colorado Springs, CO, US");
-        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
-        // assert_eq!(location, String::from("Colorado Springs, US"));
-        // let state = State {
-        //     code: String::from("NY"),
-        //     name: String::from("New York"),
-        // };
-        // let mut location = String::from("New York, NY, US");
-        // parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
-        // assert_eq!(location, String::from("New York, US"));
+        let state = State {
+            code: String::from("AB"),
+            name: String::from("Alberta"),
+        };
+        let mut location = String::from("Sherwood Park, AB, CA");
+        parser.remove_state(&state, &CANADA.clone(), &mut location);
+        assert_eq!(location, String::from("Sherwood Park, CA"));
+        let state = State {
+            code: String::from("ON"),
+            name: String::from("Ontario"),
+        };
+        let mut location = String::from("Toronto, ON, CA");
+        parser.remove_state(&state, &CANADA.clone(), &mut location);
+        assert_eq!(location, String::from("Toronto, CA"));
+        let state = State {
+            code: String::from("CA"),
+            name: String::from("California"),
+        };
+        let mut location = String::from("United States-San Diego-US CA San Diego");
+        parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        assert_eq!(
+            location,
+            String::from("United States-San Diego-US San Diego")
+        );
+        let state = State {
+            code: String::from("CO"),
+            name: String::from("Colorado"),
+        };
+        let mut location = String::from("Colorado Springs, CO, US");
+        parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        assert_eq!(location, String::from("Colorado Springs, US"));
+        let state = State {
+            code: String::from("NY"),
+            name: String::from("New York"),
+        };
+        let mut location = String::from("New York, NY, US");
+        parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        assert_eq!(location, String::from("New York, US"));
         let state = State {
             code: String::from("DC"),
             name: String::from("District Of Columbia"),
         };
         let mut location = String::from("United States-District of Columbia-washington-20340-DCCL");
         parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
-        assert_eq!(
-            location,
-            String::from("United States-washington-20340-DCCL")
-        );
+        assert_eq!(location, String::from("United States-washington-20340"));
     }
 
     #[test]
@@ -461,42 +398,34 @@ mod tests {
         assert_eq!(state.name, String::from("British Columbia"));
     }
 
-    // #[test]
-    // fn test_fill_country_from_state() {
-    //     let mut states: HashMap<State, Option<Country>> = HashMap::new();
-    //     states.insert(
-    //         State {
-    //             code: String::from("CA"),
-    //             name: String::from("California"),
-    //         },
-    //         Some(Country {
-    //             code: String::from("US"),
-    //             name: String::from("United States"),
-    //         }),
-    //     );
-    //     states.insert(
-    //         State {
-    //             code: String::from("ON"),
-    //             name: String::from("Ontario"),
-    //         },
-    //         Some(Country {
-    //             code: String::from("CA"),
-    //             name: String::from("Canada"),
-    //         }),
-    //     );
-    //     states.insert(
-    //         State {
-    //             code: String::from("ZZ"),
-    //             name: String::from("Wrong State"),
-    //         },
-    //         None,
-    //     );
-    //     let parser = Parser::new();
-    //     for (state, country) in states {
-    //         let output = parser.fill_country_from_state(&state);
-    //         assert_eq!(output, country);
-    //     }
-    // }
+    #[test]
+    fn test_fill_country_from_state() {
+        let parser = Parser::new();
+        let mut location = Location {
+            city: None,
+            state: Some(State {
+                code: String::from("CA"),
+                name: String::from("California"),
+            }),
+            country: None,
+            zipcode: None,
+            address: None,
+        };
+        parser.fill_country_from_state(&mut location);
+        assert_eq!(location.country.unwrap(), UNITED_STATES.clone());
+        let mut location = Location {
+            city: None,
+            state: Some(State {
+                code: String::from("ON"),
+                name: String::from("Ontario"),
+            }),
+            country: None,
+            zipcode: None,
+            address: None,
+        };
+        parser.fill_country_from_state(&mut location);
+        assert_eq!(location.country.unwrap(), CANADA.clone());
+    }
 
     /// cargo test benchmark_fill_state -- --nocapture --ignored
     #[test]

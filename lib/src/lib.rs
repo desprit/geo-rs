@@ -5,9 +5,10 @@ mod mocks;
 pub mod nodes;
 pub mod utils;
 use nodes::{
-    read_cities, read_countries, read_states, CountriesMap, Country, CountryCities, CountryStates,
-    Location, State,
+    read_cities, read_countries, read_states, City, CountriesMap, Country, CountryCities,
+    CountryStates, Location,
 };
+use titlecase::titlecase;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -60,6 +61,10 @@ impl Parser {
                 self.remove_country(c, &mut remainder);
             }
         }
+        self.fill_special_case_city(&mut output, &remainder);
+        if let (Some(_), Some(_), Some(_)) = (&output.city, &output.state, &output.country) {
+            return output;
+        }
         self.fill_country(&mut output, &remainder);
         if let Some(c) = &output.country {
             self.remove_country(c, &mut remainder);
@@ -73,6 +78,21 @@ impl Parser {
         if let Some(c) = output.city {
             output.city = Some(c.clone());
             self.remove_city(&mut remainder, &c);
+        }
+        if output.city.is_none() && remainder.chars().count() > 0 {
+            output.city = Some(City {
+                name: titlecase(
+                    remainder
+                        .split(",")
+                        .next()
+                        .unwrap_or("")
+                        .to_string()
+                        .chars()
+                        .filter(|c| !c.is_digit(10))
+                        .collect::<String>()
+                        .as_str(),
+                ),
+            })
         }
         debug!("output value: {}, remainder: {}", output, remainder);
         output
@@ -95,18 +115,22 @@ mod tests {
         let mut locations: HashMap<&str, &str> = HashMap::new();
         // locations.insert("Moscow, Russia", "Moscow, RU");
         // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
-        // locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
-        // locations.insert("Sausalito, US", "Sausalito, CA, US");
+        locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
+        locations.insert("Sausalito, US", "Sausalito, CA, US");
         // locations.insert("Lee's Summit, Missouri", "MO, US");
+        locations.insert(
+            "United States-California-San Diego-US CA San Diego - W. Brdway",
+            "San Diego, CA, US",
+        );
         locations.insert("BUFFALO,New York,United States", "Buffalo, NY, US");
         locations.insert("US-DE-Wilmington", "Wilmington, DE, US");
         locations.insert("Lansing, MI, US, 48911", "Lansing, MI, US, 48911");
-        locations.insert("Colleretto Giacosa", "");
+        locations.insert("Colleretto Giacosa", "Colleretto Giacosa");
         locations.insert("Mercer Island, WA", "Mercer Island, WA, US");
         locations.insert("Lees Summit, Missouri", "Lees Summit, MO, US");
         locations.insert(
             "BULLHEAD CITY FORT MOHAVE, Arizona, 86426",
-            "Bullhead City, AZ, US, 86426",
+            "Bullhead City Fort Mohave, AZ, US, 86426",
         );
         locations.insert("Manati, PR, US", "Manati, PR, US");
         locations.insert(
@@ -136,10 +160,6 @@ mod tests {
         locations.insert("Kelowna, BC, CA V1Z 2S9", "Kelowna, BC, CA, V1Z2S9");
         locations.insert("410 - Wichita  - Kansas", "Wichita, KS, US");
         locations.insert(
-            "United States-California-San Diego-US CA San Diego - W. Brdway",
-            "San Diego, CA, US",
-        );
-        locations.insert(
             "CA-ON-Oakville-3235 Dundas St W (Store# 04278)",
             "Oakville, ON, CA",
         );
@@ -150,13 +170,16 @@ mod tests {
         );
         locations.insert(
             "United States-Alaska-Shemya/Eareckson Air Station",
-            "AK, US",
+            "Shemya, AK, US",
         );
         locations.insert(
             "United States-District of Columbia-washington-20340-DCCL",
             "Washington, DC, US, 20340",
         );
-        // locations.insert("01713-Mall At Greece Ridge Center", "US, 01713");
+        locations.insert(
+            "01713-Mall At Greece Ridge Center",
+            "Mall At Greece Ridge Center, US, 01713",
+        );
         locations.insert(
             "New Westminster, British Columbia, Canada",
             "New Westminster, BC, CA",
@@ -169,8 +192,7 @@ mod tests {
         let parser = super::Parser::new();
         for (k, v) in locations {
             let output = parser.parse_location(&k);
-            println!("{:?}", output);
-            assert_eq!(output.to_string(), v.to_string());
+            assert_eq!(output.to_string(), v.to_string(), "Input: {}", k);
         }
     }
 
@@ -179,12 +201,12 @@ mod tests {
         let parser = Parser::new();
         for (input, (_, _, _, _, _, output)) in mocks::get_mocks() {
             let location = parser.parse_location(input);
-            assert_eq!(location.to_string(), output);
+            assert_eq!(location.to_string(), output, "Input: {}", input);
         }
     }
 
     /// cargo test benchmark_parse_location -- --nocapture --ignored
-    /// 9.5ms -> 3.77ms -> ~1ms -> ~1.8ms -> 0.7ms (laptop) -> 1ms (laptop)
+    /// 9.5ms -> 3.77ms -> ~1ms -> ~1.8ms -> 0.8ms
     #[test]
     #[ignore]
     fn benchmark_parse_location() {

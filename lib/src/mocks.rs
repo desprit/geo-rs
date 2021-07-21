@@ -32,7 +32,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             None,
             None,
             None,
-            "Buffalo, NY, US",
+            "Washington, DC, US",
         ),
     );
     locations.insert(
@@ -60,14 +60,8 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             Some(City {
                 name: String::from("Sausalito"),
             }),
-            Some(State {
-                code: String::from("CA"),
-                name: String::from("California"),
-            }),
-            Some(Country {
-                code: String::from("US"),
-                name: String::from("United States"),
-            }),
+            None,
+            None,
             None,
             None,
             "Sausalito, CA, US",
@@ -91,7 +85,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
                 zipcode: String::from("20340"),
             }),
             None,
-            "Washington, DC, US",
+            "Washington, DC, US, 20340",
         ),
     );
     locations.insert(
@@ -193,7 +187,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             None,
             None,
             None,
-            "Saint-Lin-Laurentides, QC, CA, J5MM0G3",
+            "Saint-Lin-Laurentides, QC, CA",
         ),
     );
     locations.insert(
@@ -436,7 +430,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             }),
             None,
             None,
-            "New Westminster, BC, Canada",
+            "New Westminster, BC, CA",
         ),
     );
     locations.insert(
@@ -476,7 +470,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
                 zipcode: String::from("20340"),
             }),
             None,
-            "Washington, DC, US",
+            "Washington, DC, US, 20340",
         ),
     );
     // locations.insert(
