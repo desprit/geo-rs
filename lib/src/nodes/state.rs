@@ -165,7 +165,8 @@ impl Parser {
                             .to_lowercase()
                             .split_whitespace()
                             .all(|s| !parts.contains(&s))
-                    }) {
+                    }) || !input.starts_with(&state.name)
+                    {
                         input.replace_range(p..p + state.name.chars().count(), "");
                     }
                 }
