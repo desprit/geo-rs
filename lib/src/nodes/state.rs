@@ -147,27 +147,31 @@ impl Parser {
         // make sure to not remove parts, e.g. for location
         // Washington-20340-DCCL we want to keep DCCL untouched
         // without removing DC out of it
+        let input_raw = input.clone();
         *input = input
             .split_whitespace()
             .filter(|s| s != &state.code.as_str())
             .collect::<Vec<_>>()
             .join(" ");
         if let Some(p) = input.to_lowercase().find(&state.name.to_lowercase()) {
-            // remove state name only if it's not a part of cities
-            // for example, when we parse "Colorado Springs, CO, US"
-            // we want to remove "CO" but not "Colorado" because it's a city
-            if let Some(country_cities) = self.cities.get(&country.code) {
-                if let Some(state_cities) = country_cities.cities_by_state.get(&state.code) {
-                    if state_cities.iter().all(|s| {
-                        let parts = s.split_whitespace().collect::<Vec<_>>();
-                        state
-                            .name
-                            .to_lowercase()
-                            .split_whitespace()
-                            .all(|s| !parts.contains(&s))
-                    }) || !input.starts_with(&state.name)
-                    {
-                        input.replace_range(p..p + state.name.chars().count(), "");
+            // Easy cases with the same state and city "New York, NY, US"
+            if !utils::split(&input_raw).contains(&state.code.as_str()) {
+                // remove state name only if it's not a part of cities
+                // for example, when we parse "Colorado Springs, CO, US"
+                // we want to remove "CO" but not "Colorado" because it's a city
+                if let Some(country_cities) = self.cities.get(&country.code) {
+                    if let Some(state_cities) = country_cities.cities_by_state.get(&state.code) {
+                        if state_cities.iter().all(|s| {
+                            let parts = s.split_whitespace().collect::<Vec<_>>();
+                            state
+                                .name
+                                .to_lowercase()
+                                .split_whitespace()
+                                .all(|s| !parts.contains(&s))
+                        }) || !input.starts_with(&state.name)
+                        {
+                            input.replace_range(p..p + state.name.chars().count(), "");
+                        }
                     }
                 }
             }
