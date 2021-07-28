@@ -30,6 +30,16 @@ impl Parser {
     }
 
     pub fn fill_special_case_city(&self, location: &mut Location, s: &str) {
+        if s.to_lowercase().contains("washington") && s.to_lowercase().contains("dc") {
+            location.country = Some(UNITED_STATES.clone());
+            location.state = Some(State {
+                code: String::from("DC"),
+                name: String::from("District Of Columbia"),
+            });
+            location.city = Some(City {
+                name: String::from("Washington"),
+            })
+        }
         if s.to_lowercase().contains("district of columbia") {
             location.country = Some(UNITED_STATES.clone());
             location.state = Some(State {
