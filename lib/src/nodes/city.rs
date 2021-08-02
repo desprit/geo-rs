@@ -50,7 +50,7 @@ impl Parser {
                 name: String::from("Washington"),
             })
         }
-        if s.to_lowercase().contains("d.c.") || s.to_lowercase().contains("d, c") {
+        if s.to_lowercase().contains("d.c.") || s.to_lowercase().contains(" d, c") {
             location.country = Some(UNITED_STATES.clone());
             location.state = Some(State {
                 code: String::from("DC"),
