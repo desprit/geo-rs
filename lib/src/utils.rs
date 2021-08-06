@@ -51,6 +51,7 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// assert_eq!(s, String::from("Toronto"));
 /// ```
 pub fn clean(s: &mut String) {
+    *s = s.replace("St. ", "Saint ");
     *s = RE_ABBREVIATIONS.replace_all(&s, "").to_string();
     *s = RE_BRACKETS.replace_all(&s, "").to_string();
     *s = RE_LEADING.replace_all(&s, "").to_string();

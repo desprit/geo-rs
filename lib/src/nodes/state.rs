@@ -54,7 +54,8 @@ impl Parser {
             return;
         }
         let as_lowercase = input.to_lowercase().to_string();
-        let parts = utils::split(&as_lowercase);
+        let mut parts = utils::split(&as_lowercase);
+        parts.dedup();
         let countries = match &location.country {
             Some(c) => vec![c.clone()],
             None => vec![UNITED_STATES.clone(), CANADA.clone()],

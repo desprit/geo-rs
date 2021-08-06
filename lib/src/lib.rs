@@ -123,6 +123,7 @@ mod tests {
             "United States-California-San Diego-US CA San Diego - W. Brdway",
             "San Diego, CA, US",
         );
+        locations.insert("St. Louis, MO, US-MO", "Saint Louis, MO, US");
         locations.insert("BUFFALO,New York,United States", "Buffalo, NY, US");
         locations.insert("US-DE-Wilmington", "Wilmington, DE, US");
         locations.insert("Lansing, MI, US, 48911", "Lansing, MI, US, 48911");
