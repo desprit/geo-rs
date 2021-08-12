@@ -115,6 +115,10 @@ mod tests {
         let mut locations: HashMap<&str, &str> = HashMap::new();
         // locations.insert("Moscow, Russia", "Moscow, RU");
         // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
+        locations.insert(
+            "Chestnut Ridge, New York, United States",
+            "Chestnut Ridge, NY, US",
+        );
         locations.insert("Kenogami Mill , Quebec, Canada", "Kenogami Mill, QC, CA");
         locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
         locations.insert("Sausalito, US", "Sausalito, CA, US");
