@@ -1,17 +1,18 @@
-use crate::Country;
+use crate::{Country, Location};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
+use unidecode::unidecode;
 
 lazy_static! {
     static ref RE_BRACKETS: Regex = Regex::new(r"\(.*?\)").unwrap();
     static ref RE_LEADING: Regex = Regex::new(r"^[\s\-,;:_\.\?!/]*").unwrap();
     static ref RE_TRAILING: Regex = Regex::new(r"[\s\-,;:_\.\?!/]*$").unwrap();
-    static ref RE_SPLITTER1: Regex = Regex::new(r"[^a-zA-Z0-9\s-]").unwrap();
-    static ref RE_SPLITTER2: Regex = Regex::new(r"[^a-zA-Z0-9]").unwrap();
+    static ref RE_SPLITTER1: Regex = Regex::new(r"[^a-z\p{L}A-Z0-9\s-]").unwrap();
+    static ref RE_SPLITTER2: Regex = Regex::new(r"[^a-z\p{L}A-Z0-9]").unwrap();
     static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
     static ref RE_ABBREVIATIONS: Regex =
         Regex::new(r"\b(?:[QWRTPSDFGHKLZXCVBNM]{3,5}\b|(?:[A-Za-z]\.){3,})\s*").unwrap();
@@ -68,6 +69,17 @@ pub fn clean(s: &mut String) {
         .replace("|-|", " - ")
         .replace(", , ", ", ")
         .replace("--", "-");
+}
+
+pub fn decode(location: &mut Location) {
+    if location.city.is_some() {
+        let decoded = &location.city.as_ref().unwrap().name;
+        location.city.as_mut().unwrap().name = unidecode(decoded);
+    }
+    if location.state.is_some() {
+        let decoded = &location.state.as_ref().unwrap().name;
+        location.state.as_mut().unwrap().name = unidecode(decoded);
+    }
 }
 
 /// Split given string by non alphanumeric symbol and return a `Vec<&str>`

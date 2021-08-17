@@ -20,6 +20,23 @@ type Output = (
 pub fn get_mocks() -> HashMap<Input, Output> {
     let mut locations: HashMap<Input, Output> = HashMap::new();
     locations.insert(
+        "Kenogami Mill , Quebec, Canada",
+        (
+            None,
+            Some(State {
+                code: String::from("QC"),
+                name: String::from("Quebec"),
+            }),
+            Some(Country {
+                code: String::from("CA"),
+                name: String::from("Canada"),
+            }),
+            None,
+            None,
+            "Kenogami Mill, QC, CA",
+        ),
+    );
+    locations.insert(
         "Washington D.C.",
         (
             Some(City {
@@ -473,26 +490,24 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             "Washington, DC, US, 20340",
         ),
     );
-    // locations.insert(
-    //     "Offutt AFB, Nebraska -Offutt AFB, NE 68113 US",
-    //     (
-    //         Some(City {
-    //             name: String::from("Offutt AFB"),
-    //         }),
-    //         Some(State {
-    //             code: String::from("NE"),
-    //             name: String::from("Nebraska"),
-    //         }),
-    //         Some(Country {
-    //             code: String::from("US"),
-    //             name: String::from("United States"),
-    //         }),
-    //         Some(Zipcode {
-    //             zipcode: String::from("68113"),
-    //         }),
-    //         None,
-    //         "Offutt AFB, NE, US",
-    //     ),
-    // );
+    locations.insert(
+        "Offutt AFB, Nebraska -Offutt AFB, NE 68113 US",
+        (
+            None,
+            Some(State {
+                code: String::from("NE"),
+                name: String::from("Nebraska"),
+            }),
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
+            Some(Zipcode {
+                zipcode: String::from("68113"),
+            }),
+            None,
+            "Offutt AFB, NE, US, 68113",
+        ),
+    );
     locations
 }

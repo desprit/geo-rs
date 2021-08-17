@@ -60,6 +60,7 @@ impl Parser {
             Some(c) => vec![c.clone()],
             None => vec![UNITED_STATES.clone(), CANADA.clone()],
         };
+        // Search by a full match of input and state name
         for c in &countries {
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
@@ -76,11 +77,12 @@ impl Parser {
                 }
             }
         }
+        // Search by input containing state code or state name
         let mut candidates: Vec<(State, Country)> = vec![];
         for c in &countries {
             if let Some(states) = self.states.get(&c.code) {
-                for part in &parts {
-                    for (code, name) in &states.code_to_name {
+                for (code, name) in &states.code_to_name {
+                    for part in &parts {
                         if code == &part.to_uppercase().to_string() {
                             let state = State {
                                 code: code.clone(),
@@ -89,9 +91,19 @@ impl Parser {
                             candidates.push((state, c.clone()));
                         }
                     }
+                    if name.split_whitespace().all(|s| {
+                        return parts.contains(&s.to_lowercase().as_str());
+                    }) {
+                        let state = State {
+                            code: code.clone(),
+                            name: name.clone(),
+                        };
+                        candidates.push((state, c.clone()));
+                    }
                 }
             };
         }
+
         // When analyzing locations such as `Sherwood Park, AB, CA`
         // we may end up having more than one state, in that case
         // use the one that doesn't look like a country
@@ -117,6 +129,7 @@ impl Parser {
                 }
             }
         }
+        utils::decode(location);
     }
 
     /// Remove state from location string.
@@ -144,11 +157,11 @@ impl Parser {
     /// assert_eq!(location, String::from("Los Angeles, US"));
     /// ```
     pub fn remove_state(&self, state: &State, country: &Country, input: &mut String) {
+        let input_raw = input.clone();
         // first of all, remove state code from the input string
         // make sure to not remove parts, e.g. for location
         // Washington-20340-DCCL we want to keep DCCL untouched
         // without removing DC out of it
-        let input_raw = input.clone();
         *input = input
             .split_whitespace()
             .filter(|s| s != &state.code.as_str())
@@ -335,7 +348,7 @@ mod tests {
             };
             parser.fill_special_case_city(&mut location, &input);
             parser.fill_state(&mut location, &input);
-            assert_eq!(location.state, output.1, "input: {}", input);
+            assert_eq!(output.1, location.state, "input: {}", input);
         }
     }
 

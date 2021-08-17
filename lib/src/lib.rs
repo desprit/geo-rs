@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #[macro_use]
 extern crate log;
+extern crate unidecode;
 mod mocks;
 pub mod nodes;
 pub mod utils;
@@ -9,6 +10,7 @@ use nodes::{
     CountryStates, Location,
 };
 use titlecase::titlecase;
+use unidecode::unidecode;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -50,7 +52,7 @@ impl Parser {
             zipcode: None,
             address: None,
         };
-        let mut input_copy = input.to_string();
+        let mut input_copy = unidecode(&input.to_string());
         utils::clean(&mut input_copy);
         let mut remainder = input_copy.clone();
         debug!("input value: {}", remainder);
@@ -94,6 +96,7 @@ impl Parser {
                 ),
             })
         }
+        utils::decode(&mut output);
         debug!("output value: {}, remainder: {}", output, remainder);
         output
     }
@@ -115,11 +118,12 @@ mod tests {
         let mut locations: HashMap<&str, &str> = HashMap::new();
         // locations.insert("Moscow, Russia", "Moscow, RU");
         // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
+        locations.insert("Kenogami Mill , Quebec, Canada", "Kenogami Mill, QC, CA");
+        locations.insert("Montréal, Québec, CAN", "Montreal, QC, CA");
         locations.insert(
             "Chestnut Ridge, New York, United States",
             "Chestnut Ridge, NY, US",
         );
-        locations.insert("Kenogami Mill , Quebec, Canada", "Kenogami Mill, QC, CA");
         locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
         locations.insert("Sausalito, US", "Sausalito, CA, US");
         // locations.insert("Lee's Summit, Missouri", "MO, US");

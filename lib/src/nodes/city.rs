@@ -96,18 +96,20 @@ impl Parser {
             .unwrap_or("")
             .to_string();
         for c in utils::get_countries(&location.country) {
-            let states = match &location.state {
-                Some(s) => vec![&s.code],
+            let [state_codes, state_names] = match &location.state {
+                Some(s) => [vec![&s.code], vec![&s.name]],
                 None => match self.states.get(&c.code) {
-                    Some(country_states) => {
-                        country_states.code_to_name.keys().collect::<Vec<&String>>()
-                    }
-                    None => vec![],
+                    Some(country_states) => [
+                        country_states.code_to_name.keys().collect::<Vec<&String>>(),
+                        country_states.name_to_code.keys().collect::<Vec<&String>>(),
+                    ],
+                    None => [vec![], vec![]],
                 },
             };
             if let Some(country_cities) = &self.cities.get(&c.code) {
                 let mut candidates: Vec<(String, String)> = vec![];
-                for s in &states {
+                // Search for a full match (when input consists of just a city)
+                for s in &state_codes {
                     if let Some(state_cities) = country_cities.cities_by_state.get(*s) {
                         if state_cities.contains(&input_cleaned.to_string()) {
                             candidates.push((s.to_string(), input_cleaned.clone()))
@@ -115,7 +117,8 @@ impl Parser {
                     }
                 }
                 if candidates.len() == 0 {
-                    for s in states {
+                    // Search for a partly match (when input consists of a city and some other stuff)
+                    for s in state_codes {
                         if let Some(state_cities) = country_cities.cities_by_state.get(s) {
                             for city in state_cities {
                                 let input_lowercase = input.to_lowercase();
@@ -138,20 +141,49 @@ impl Parser {
                             input_cleaned, candidates
                         );
                     }
-                    location.city = Some(City {
-                        name: String::from(titlecase(candidates.first().unwrap().1.as_str())),
-                    });
-                    if location.country.is_none() {
-                        location.country = Some(c.clone());
-                    }
-                    if location.state.is_none() {
-                        let state =
-                            self.state_from_code(&Some(c), candidates.first().unwrap().0.as_str());
-                        location.state = state;
+                    let first_candidate = candidates.first().unwrap();
+                    let state_candidate = &first_candidate.0;
+                    let city_candidate = &first_candidate.1;
+                    let cities = country_cities.cities_by_state.get(state_candidate);
+                    if cities.is_some() {
+                        let full_match = input_cleaned == city_candidate.to_lowercase();
+                        let city_as_first_value =
+                            &input_cleaned.starts_with(&city_candidate.to_lowercase());
+                        // When city is also state, e.g. Quebec or New York
+                        if state_names
+                            .iter()
+                            .map(|v| v.to_lowercase())
+                            .collect::<Vec<String>>()
+                            .contains(&&city_candidate)
+                            && !full_match
+                            && !city_as_first_value
+                        {
+                            debug!(
+                                "Candidate city is also a state {:?}: {:?}",
+                                input_cleaned, candidates
+                            );
+                        } else {
+                            location.city = Some(City {
+                                name: String::from(titlecase(
+                                    candidates.first().unwrap().1.as_str(),
+                                )),
+                            });
+                            if location.country.is_none() {
+                                location.country = Some(c.clone());
+                            }
+                            if location.state.is_none() {
+                                let state = self.state_from_code(
+                                    &Some(c),
+                                    candidates.first().unwrap().0.as_str(),
+                                );
+                                location.state = state;
+                            }
+                        }
                     }
                 }
             }
         }
+        utils::decode(location);
     }
 }
 
