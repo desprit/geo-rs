@@ -106,11 +106,29 @@ impl Parser {
                 location.country = Some(CANADA.clone());
                 return;
             }
+            let ca_cities: Vec<&String> = self
+                .cities
+                .get("CA")
+                .unwrap()
+                .cities_by_state
+                .values()
+                .flatten()
+                .collect();
             let us_cities = self.cities.get("US").unwrap();
             let california_cities = us_cities.cities_by_state.get("CA").unwrap();
             if california_cities
                 .iter()
-                .find(|x| as_lowercase.contains(&x.to_lowercase()))
+                .find(|x| {
+                    // Check whether input string has a California city in it
+                    if !as_lowercase.contains(&x.to_lowercase()) {
+                        return false;
+                    }
+                    // Make sure that California city is not also a Canadian city
+                    if ca_cities.contains(x) {
+                        return false;
+                    }
+                    return true;
+                })
                 .is_some()
             {
                 location.country = Some(UNITED_STATES.clone());

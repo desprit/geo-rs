@@ -109,12 +109,6 @@ impl Parser {
         // use the one that doesn't look like a country
         match candidates.len() {
             0 => (),
-            1 => {
-                location.state = Some(candidates.first().unwrap().0.clone());
-                if location.country.is_none() {
-                    location.country = Some(candidates.first().unwrap().1.clone());
-                }
-            }
             _ => {
                 let country_codes: Vec<String> = countries.iter().map(|x| x.code.clone()).collect();
                 let filtered_candidates: Vec<(State, Country)> = candidates

@@ -1,4 +1,4 @@
-use super::{Location, CANADA, UNITED_STATES};
+use super::{Location, State, CANADA, UNITED_STATES};
 use crate::utils;
 use crate::Parser;
 use lazy_static::lazy_static;
@@ -59,11 +59,87 @@ impl Parser {
         if input.chars().count() == 0 {
             return;
         }
-        if let Some(zipcode) = CA_PATTERN.find(&input) {
+        if let Some(zipcode_match) = CA_PATTERN.find(&input) {
+            let zipcode = input[zipcode_match.start()..zipcode_match.end()].to_string();
             location.zipcode = Some(Zipcode {
-                zipcode: input[zipcode.start()..zipcode.end()].to_string(),
+                zipcode: zipcode.clone(),
             });
             location.country = Some(CANADA.clone());
+            match zipcode.chars().nth(0).unwrap().to_string().as_str() {
+                "A" => {
+                    location.state = Some(State {
+                        name: String::from("Newfoundland"),
+                        code: String::from("NL"),
+                    })
+                }
+                "B" => {
+                    location.state = Some(State {
+                        name: String::from("Nova Scotia"),
+                        code: String::from("NS"),
+                    })
+                }
+                "C" => {
+                    location.state = Some(State {
+                        name: String::from("Prince Edward Is."),
+                        code: String::from("PE"),
+                    })
+                }
+                "E" => {
+                    location.state = Some(State {
+                        name: String::from("New Brunswick"),
+                        code: String::from("NB"),
+                    })
+                }
+                "G" | "H" | "J" => {
+                    location.state = Some(State {
+                        name: String::from("Quebec"),
+                        code: String::from("QC"),
+                    })
+                }
+                "K" | "L" | "M" | "N" | "P" => {
+                    location.state = Some(State {
+                        name: String::from("Ontario"),
+                        code: String::from("ON"),
+                    })
+                }
+                "R" => {
+                    location.state = Some(State {
+                        name: String::from("Manitoba"),
+                        code: String::from("MB"),
+                    })
+                }
+                "S" => {
+                    location.state = Some(State {
+                        name: String::from("Saskatchewen"),
+                        code: String::from("SK"),
+                    })
+                }
+                "T" => {
+                    location.state = Some(State {
+                        name: String::from("Alberta"),
+                        code: String::from("AB"),
+                    })
+                }
+                "V" => {
+                    location.state = Some(State {
+                        name: String::from("British Columbia"),
+                        code: String::from("BC"),
+                    })
+                }
+                "X" => {
+                    location.state = Some(State {
+                        name: String::from("Nunavut"),
+                        code: String::from("NU"),
+                    })
+                }
+                "Y" => {
+                    location.state = Some(State {
+                        name: String::from("Yukon"),
+                        code: String::from("YT"),
+                    })
+                }
+                _ => (),
+            };
             return;
         }
         for part in utils::split(&input) {

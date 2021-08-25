@@ -137,7 +137,7 @@ impl Parser {
                 if candidates.len() >= 1 && candidates.len() < 3 {
                     if candidates.len() > 1 {
                         debug!(
-                            "Found 2+ candidates for a city {:?}: {:?}",
+                            "Found multiple city candidates for an input {:?}: {:?}",
                             input_cleaned, candidates
                         );
                     }

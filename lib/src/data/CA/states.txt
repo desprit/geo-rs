@@ -3,7 +3,7 @@ BC;British Columbia
 LB;Labrador
 MB;Manitoba
 NB;New Brunswick
-NF;Newfoundland
+NL;Newfoundland
 NS;Nova Scotia
 NU;Nunavut
 NW;North West Terr.
@@ -11,4 +11,4 @@ ON;Ontario
 PE;Prince Edward Is.
 QC;Quebec
 SK;Saskatchewen
-YU;Yukon
+YT;Yukon
