@@ -54,7 +54,20 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 pub fn clean(s: &mut String) {
     *s = s.replace("St. ", "Saint ");
     *s = RE_ABBREVIATIONS.replace_all(&s, "").to_string();
-    *s = RE_BRACKETS.replace_all(&s, "").to_string();
+    // find values in brackets and if it contain digits, remove everything in brackets
+    // example: `CA-ON-Oakville-3235 (Store# 04278)` - we DON'T need value in brackets
+    // example: `Midland (MI, USA)` - we DO need value in brackets
+    if let Some(in_brackets) = RE_BRACKETS.find(&s) {
+        let v = &s[in_brackets.start()..in_brackets.end()];
+        if !v
+            .chars()
+            .filter(|c| c.is_digit(10))
+            .collect::<Vec<_>>()
+            .is_empty()
+        {
+            *s = RE_BRACKETS.replace_all(&s, "").to_string();
+        }
+    }
     *s = RE_LEADING.replace_all(&s, "").to_string();
     *s = RE_TRAILING.replace_all(&s, "").to_string();
     *s = RE_SPLITTER1
