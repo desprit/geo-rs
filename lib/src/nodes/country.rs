@@ -135,6 +135,14 @@ impl Parser {
                 return;
             }
         }
+        for (country_name, country_code) in self.countries.name_to_code.iter() {
+            if as_lowercase.contains(&country_name.to_lowercase()) {
+                location.country = Some(Country {
+                    name: String::from(country_name),
+                    code: String::from(country_code),
+                })
+            }
+        }
     }
 
     /// Remove country from location string.
@@ -158,15 +166,18 @@ impl Parser {
     /// assert_eq!(location, String::from("New York, NY"));
     /// ```
     pub fn remove_country(&self, country: &Country, input: &mut String) {
-        let case_insensitive_parts: Vec<&str> = match country.code.as_str() {
-            "US" => vec!["united states of america", "united states"],
-            "CA" => vec!["canada"],
-            _ => vec![],
+        let case_insensitive_parts: Vec<String> = match country.code.as_str() {
+            "US" => vec![
+                String::from("united states of america"),
+                String::from("united states"),
+            ],
+            "CA" => vec![String::from("canada")],
+            _ => vec![country.name.to_lowercase()],
         };
-        let case_sensitive_parts: Vec<&str> = match country.code.as_str() {
-            "US" => vec!["USA", "US"],
-            "CA" => vec!["CA"],
-            _ => vec![],
+        let case_sensitive_parts: Vec<String> = match country.code.as_str() {
+            "US" => vec![String::from("USA"), String::from("US")],
+            "CA" => vec![String::from("CA")],
+            _ => vec![country.code.to_lowercase()],
         };
         for part in &case_insensitive_parts {
             if let Some(start) = input.to_lowercase().find(part) {
@@ -174,7 +185,7 @@ impl Parser {
             }
         }
         for part in case_sensitive_parts {
-            *input = input.replace(part, "");
+            *input = input.replace(&part, "");
         }
         utils::clean(input);
         debug!("after removing country: {}", input);
