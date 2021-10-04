@@ -75,6 +75,7 @@ pub fn clean(s: &mut String) {
         .filter(|&x| !x.is_empty())
         .collect::<Vec<&str>>()
         .join(", ");
+    *s = s.replace("St,", "St.").replace("Ft,", "Ft.");
     *s = RE_SPACES.replace_all(&s, " ").to_string();
     *s = s
         .replace(" - ", "|-|")
@@ -150,24 +151,27 @@ mod tests {
         let mut s = "BULLHEAD CITY FORT MOHAVE, Arizona, 86426".to_string();
         clean(&mut s);
         assert_eq!(s, "BULLHEAD CITY FORT MOHAVE, Arizona, 86426".to_string());
-        // let mut s = "Cupertino - Stevens Creek".to_string();
-        // clean(&mut s);
-        // assert_eq!(s, "Cupertino - Stevens Creek".to_string());
-        // let mut s = "canada,".to_string();
-        // clean(&mut s);
-        // assert_eq!(s, "canada".to_string());
-        // s = "!--?(invalid)Toronto/".to_string();
-        // clean(&mut s);
-        // assert_eq!(s, "Toronto".to_string());
-        // let mut s = "Dundas St W (Store# 04278)".to_string();
-        // clean(&mut s);
-        // assert_eq!(s, "Dundas St W".to_string());
-        // let mut s = "United States-District of Columbia-washington-20340-DCCL".to_string();
-        // clean(&mut s);
-        // assert_eq!(
-        //     s,
-        //     "United States-District of Columbia-washington-20340".to_string()
-        // );
+        s = "Ft. Meade, MD, US".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Ft. Meade, MD, US".to_string());
+        let mut s = "Cupertino - Stevens Creek".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Cupertino - Stevens Creek".to_string());
+        let mut s = "canada,".to_string();
+        clean(&mut s);
+        assert_eq!(s, "canada".to_string());
+        s = "!--?(invalid 123)Toronto/".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Toronto".to_string());
+        let mut s = "Dundas St W (Store# 04278)".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Dundas St W".to_string());
+        let mut s = "United States-District of Columbia-washington-20340-DCCL".to_string();
+        clean(&mut s);
+        assert_eq!(
+            s,
+            "United States-District of Columbia-washington-20340".to_string()
+        );
     }
 
     #[test]
