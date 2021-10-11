@@ -10,5 +10,5 @@ NW;North West Terr.
 ON;Ontario
 PE;Prince Edward Is.
 QC;Quebec
-SK;Saskatchewen
+SK;Saskatchewan
 YT;Yukon
