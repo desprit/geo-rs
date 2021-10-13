@@ -52,6 +52,7 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 /// assert_eq!(s, String::from("Toronto"));
 /// ```
 pub fn clean(s: &mut String) {
+    *s = s.replace("'s", "s");
     *s = s.replace("St. ", "Saint ");
     *s = RE_ABBREVIATIONS.replace_all(&s, "").to_string();
     // find values in brackets and if it contain digits, remove everything in brackets
