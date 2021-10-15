@@ -143,6 +143,12 @@ impl Parser {
                 })
             }
         }
+        if input.contains("US") {
+            location.country = Some(UNITED_STATES.clone());
+        }
+        if input.contains("CA") {
+            location.country = Some(CANADA.clone());
+        }
     }
 
     /// Remove country from location string.
