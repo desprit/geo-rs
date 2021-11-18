@@ -213,6 +213,9 @@ pub fn read_cities() -> HashMap<String, CitiesMap> {
         for line in utils::read_lines(&filename) {
             if let Ok(s) = line {
                 let parts: Vec<&str> = s.split(";").collect();
+                if parts[1].len() <= 3 {
+                    continue;
+                }
                 match cities_by_state.get_mut(parts[0]) {
                     Some(state_cities) => {
                         state_cities.push(parts[1].to_lowercase().to_string());
