@@ -131,7 +131,6 @@ impl Parser {
                 })
                 .is_some()
             {
-                location.country = Some(UNITED_STATES.clone());
                 return;
             }
         }
