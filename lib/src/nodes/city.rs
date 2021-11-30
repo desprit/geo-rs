@@ -89,7 +89,7 @@ impl Parser {
         if location.state.is_some() & location.country.is_none() {
             self.fill_country_from_state(location);
         }
-        let input_cleaned = input
+        let input_first_word = input
             .to_lowercase()
             .split(",")
             .next()
@@ -111,8 +111,8 @@ impl Parser {
                 // Search for a full match (when input consists of just a city)
                 for s in &state_codes {
                     if let Some(state_cities) = country_cities.cities_by_state.get(*s) {
-                        if state_cities.contains(&input_cleaned.to_string()) {
-                            candidates.push((s.to_string(), input_cleaned.clone()))
+                        if state_cities.contains(&input_first_word.to_string()) {
+                            candidates.push((s.to_string(), input_first_word.clone()))
                         }
                     }
                 }
@@ -134,51 +134,68 @@ impl Parser {
                         }
                     }
                 }
+                let mut ranged_candidates: Vec<(String, String)> = vec![];
                 if candidates.len() >= 1 && candidates.len() < 3 {
                     if candidates.len() > 1 {
                         debug!(
                             "Found multiple city candidates for an input {:?}: {:?}",
-                            input_cleaned, candidates
+                            input, candidates
                         );
                     }
-                    let first_candidate = candidates.first().unwrap();
-                    let state_candidate = &first_candidate.0;
-                    let city_candidate = &first_candidate.1;
-                    let cities = country_cities.cities_by_state.get(state_candidate);
-                    if cities.is_some() {
-                        let full_match = input_cleaned == city_candidate.to_lowercase();
-                        let city_as_first_value =
-                            &input_cleaned.starts_with(&city_candidate.to_lowercase());
-                        // When city is also state, e.g. Quebec or New York
-                        if state_names
-                            .iter()
-                            .map(|v| v.to_lowercase())
-                            .collect::<Vec<String>>()
-                            .contains(&&city_candidate)
-                            && !full_match
-                            && !city_as_first_value
-                        {
-                            debug!(
-                                "Candidate city is also a state {:?}: {:?}",
-                                input_cleaned, candidates
-                            );
-                        } else {
-                            location.city = Some(City {
-                                name: String::from(titlecase(
-                                    candidates.first().unwrap().1.as_str(),
-                                )),
-                            });
-                            if location.country.is_none() {
-                                location.country = Some(c.clone());
-                            }
-                            if location.state.is_none() {
-                                let state = self.state_from_code(
-                                    &Some(c),
-                                    candidates.first().unwrap().0.as_str(),
+                    for candidate in &candidates {
+                        let candidate_city = &candidate.1;
+                        let candidate_state = &candidate.0;
+                        if country_cities.cities_by_state.get(&candidate.0).is_some() {
+                            let city_full_match = input_first_word == candidate_city.to_lowercase();
+                            let city_part_match = input
+                                .to_lowercase()
+                                .contains(&candidate_city.to_lowercase());
+                            let state_match = utils::split(input.to_uppercase().as_str())
+                                .contains(&candidate_state.as_str());
+                            let input_starts_with_city =
+                                &input_first_word.starts_with(&candidate_city.to_lowercase());
+                            // Ignore when city is also state, e.g. Quebec or New York
+                            if state_names
+                                .iter()
+                                .map(|v| v.to_lowercase())
+                                .collect::<Vec<String>>()
+                                .contains(&&candidate_city)
+                                && !city_full_match
+                                && !input_starts_with_city
+                            {
+                                debug!(
+                                    "Candidate city is also a state {:?}: {:?}",
+                                    input_first_word, candidates
                                 );
-                                location.state = state;
+                                continue;
                             }
+                            if city_full_match && state_match {
+                                ranged_candidates = vec![candidate.clone()];
+                                break;
+                            }
+                            if city_part_match && state_match {
+                                ranged_candidates.insert(0, candidate.clone());
+                                break;
+                            }
+                            ranged_candidates.push(candidate.clone());
                         }
+                    }
+                }
+                if ranged_candidates.len() > 0 {
+                    location.city = Some(City {
+                        name: String::from(titlecase(
+                            ranged_candidates.first().unwrap().1.as_str(),
+                        )),
+                    });
+                    if location.country.is_none() {
+                        location.country = Some(c.clone());
+                    }
+                    if location.state.is_none() {
+                        let state = self.state_from_code(
+                            &Some(c),
+                            ranged_candidates.first().unwrap().0.as_str(),
+                        );
+                        location.state = state;
                     }
                 }
             }

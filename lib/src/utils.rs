@@ -1,4 +1,5 @@
 use crate::{Country, Location};
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::env;
@@ -84,6 +85,7 @@ pub fn clean(s: &mut String) {
         .replace("|-|", " - ")
         .replace(", , ", ", ")
         .replace("--", "-");
+    *s = s.split(", ").into_iter().unique().join(", ");
 }
 
 pub fn decode(location: &mut Location) {
@@ -152,7 +154,7 @@ mod tests {
         let mut s = "BULLHEAD CITY FORT MOHAVE, Arizona, 86426".to_string();
         clean(&mut s);
         assert_eq!(s, "BULLHEAD CITY FORT MOHAVE, Arizona, 86426".to_string());
-        s = "Ft. Meade, MD, US".to_string();
+        let mut s = "Ft. Meade, MD, US".to_string();
         clean(&mut s);
         assert_eq!(s, "Ft. Meade, MD, US".to_string());
         let mut s = "Cupertino - Stevens Creek".to_string();
@@ -173,6 +175,12 @@ mod tests {
             s,
             "United States-District of Columbia-washington-20340".to_string()
         );
+        let mut s = "Canton, MA, Canton, MA, US".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Canton, MA, US".to_string());
+        let mut s = "Canton,MA,Canton,MA,US".to_string();
+        clean(&mut s);
+        assert_eq!(s, "Canton, MA, US".to_string());
     }
 
     #[test]
