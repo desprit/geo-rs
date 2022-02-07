@@ -1,4 +1,4 @@
-use super::{Location, State, CANADA, UNITED_STATES};
+use super::{Location, State, CANADA};
 use crate::utils;
 use crate::Parser;
 use lazy_static::lazy_static;
@@ -154,7 +154,6 @@ impl Parser {
                     location.zipcode = Some(Zipcode {
                         zipcode: input[zipcode.start()..zipcode.end()].to_string(),
                     });
-                    location.country = Some(UNITED_STATES.clone());
                     return;
                 }
             }
@@ -197,7 +196,7 @@ mod tests {
             let mut location = Location {
                 city: None,
                 state: None,
-                country: None,
+                country: output.2,
                 zipcode: None,
                 address: None,
             };

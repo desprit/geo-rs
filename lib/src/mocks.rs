@@ -519,5 +519,19 @@ pub fn get_mocks() -> HashMap<Input, Output> {
             "Offutt AFB, NE, US, 68113",
         ),
     );
+    locations.insert(
+        "Barcelona, Barcelona, ES",
+        (
+            None,
+            None,
+            Some(Country {
+                code: String::from("ES"),
+                name: String::from("Spain"),
+            }),
+            None,
+            None,
+            "Barcelona, ES",
+        ),
+    );
     locations
 }

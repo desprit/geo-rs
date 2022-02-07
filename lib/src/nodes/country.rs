@@ -134,19 +134,36 @@ impl Parser {
                 return;
             }
         }
-        for (country_name, country_code) in self.countries.name_to_code.iter() {
-            if as_lowercase.contains(&country_name.to_lowercase()) {
-                location.country = Some(Country {
-                    name: String::from(country_name),
-                    code: String::from(country_code),
-                })
-            }
-        }
         if input.contains("US") {
             location.country = Some(UNITED_STATES.clone());
         }
         if input.contains("CA") {
             location.country = Some(CANADA.clone());
+        }
+        for (country_name, country_code) in self.countries.name_to_code.iter() {
+            if let Some(us_states) = self.states.get("US") {
+                if us_states.code_to_name.contains_key(country_code) {
+                    continue;
+                }
+            }
+            if let Some(ca_states) = self.states.get("CA") {
+                if ca_states.code_to_name.contains_key(country_code) {
+                    continue;
+                }
+            }
+            if utils::split(&input.to_string()).contains(&country_code.as_str()) {
+                location.country = Some(Country {
+                    code: country_code.clone(),
+                    name: country_name.clone(),
+                });
+                return;
+            }
+            // if as_lowercase.contains(&country_name.to_lowercase()) {
+            //     location.country = Some(Country {
+            //         name: String::from(country_name),
+            //         code: String::from(country_code),
+            //     })
+            // }
         }
     }
 
@@ -182,7 +199,7 @@ impl Parser {
         let case_sensitive_parts: Vec<String> = match country.code.as_str() {
             "US" => vec![String::from("USA"), String::from("US")],
             "CA" => vec![String::from("CA")],
-            _ => vec![country.code.to_lowercase()],
+            _ => vec![country.code.clone()],
         };
         for part in &case_insensitive_parts {
             if let Some(start) = input.to_lowercase().find(part) {
@@ -283,6 +300,13 @@ mod tests {
         let mut location = String::from("Lansing, MI, US");
         parser.remove_country(&country, &mut location);
         assert_eq!(location, String::from("Lansing, MI"));
+        let country = Country {
+            code: String::from("ES"),
+            name: String::from("Spain"),
+        };
+        let mut location = String::from("Barcelona, ES");
+        parser.remove_country(&country, &mut location);
+        assert_eq!(location, String::from("Barcelona"));
     }
 
     /// cargo test benchmark_fill_country -- --nocapture --ignored
