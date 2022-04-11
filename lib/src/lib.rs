@@ -168,6 +168,7 @@ mod tests {
             "B - USA - FL - JACKSONVILLE - 9985 PRITCHARD RD",
             "Jacksonville, FL, US",
         );
+        locations.insert("Richmond, CA, V6V 1N3", "Richmond, BC, CA, V6V1N3");
         locations.insert("Kelowna, BC, CA V1Z 2S9", "Kelowna, BC, CA, V1Z2S9");
         locations.insert("410 - Wichita  - Kansas", "Wichita, KS, US");
         locations.insert(
