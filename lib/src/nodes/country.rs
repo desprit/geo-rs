@@ -158,12 +158,12 @@ impl Parser {
                 });
                 return;
             }
-            // if as_lowercase.contains(&country_name.to_lowercase()) {
-            //     location.country = Some(Country {
-            //         name: String::from(country_name),
-            //         code: String::from(country_code),
-            //     })
-            // }
+            if as_lowercase.contains(&country_name.to_lowercase()) {
+                location.country = Some(Country {
+                    name: String::from(country_name),
+                    code: String::from(country_code),
+                })
+            }
         }
     }
 

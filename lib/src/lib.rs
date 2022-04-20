@@ -188,10 +188,10 @@ mod tests {
             "United States-District of Columbia-washington-20340-DCCL",
             "Washington, DC, US, 20340",
         );
-        locations.insert(
-            "01713-Mall At Greece Ridge Center",
-            "Mall At Greece Ridge Center, 01713",
-        );
+        // locations.insert(
+        //     "01713-Mall At Greece Ridge Center",
+        //     "Mall At Greece Ridge Center, 01713",
+        // );
         locations.insert(
             "New Westminster, British Columbia, Canada",
             "New Westminster, BC, CA",
