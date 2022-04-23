@@ -140,6 +140,18 @@ impl Parser {
         if input.contains("CA") {
             location.country = Some(CANADA.clone());
         }
+        // Search full country name in the input string
+        for (country_name, country_code) in self.countries.name_to_code.iter() {
+            if as_lowercase.contains(&country_name.to_lowercase()) {
+                location.country = Some(Country {
+                    name: String::from(country_name),
+                    code: String::from(country_code),
+                });
+                return;
+            }
+        }
+        // Search country code in the input string, ignore country if code is also US or CA state,
+        // For example, ignore country code PA (Panama) because it's also Pennsylvania
         for (country_name, country_code) in self.countries.name_to_code.iter() {
             if let Some(us_states) = self.states.get("US") {
                 if us_states.code_to_name.contains_key(country_code) {
@@ -157,12 +169,6 @@ impl Parser {
                     name: country_name.clone(),
                 });
                 return;
-            }
-            if as_lowercase.contains(&country_name.to_lowercase()) {
-                location.country = Some(Country {
-                    name: String::from(country_name),
-                    code: String::from(country_code),
-                })
             }
         }
     }
