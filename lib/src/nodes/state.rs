@@ -54,8 +54,10 @@ impl Parser {
             return;
         }
         let as_lowercase = input.to_lowercase().to_string();
-        let mut parts = utils::split(&as_lowercase);
+        let mut parts = utils::split(input);
         parts.dedup();
+        let mut parts_lowercase = utils::split(&as_lowercase);
+        parts_lowercase.dedup();
         let countries = match &location.country {
             Some(c) => vec![c.clone()],
             None => vec![UNITED_STATES.clone(), CANADA.clone()],
@@ -83,7 +85,7 @@ impl Parser {
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
                     for part in &parts {
-                        if code == &part.to_uppercase().to_string() {
+                        if code == &part.to_string() {
                             let state = State {
                                 code: code.clone(),
                                 name: name.clone(),
@@ -92,7 +94,7 @@ impl Parser {
                         }
                     }
                     if name.split_whitespace().all(|s| {
-                        return parts.contains(&s.to_lowercase().as_str());
+                        return parts_lowercase.contains(&s.to_lowercase().as_str());
                     }) {
                         let state = State {
                             code: code.clone(),

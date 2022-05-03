@@ -374,7 +374,7 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
-        "manati, pr, us",
+        "MANATI, PR, US",
         (
             Some(City {
                 name: String::from("Manati"),

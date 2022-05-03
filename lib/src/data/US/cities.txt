@@ -2367,6 +2367,7 @@ CA;Chilcoot
 CA;Clements
 CA;Coalinga
 CA;Columbia
+CA;Commerce
 CA;Comptche
 CA;Corcoran
 CA;Coronado
