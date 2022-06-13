@@ -132,7 +132,10 @@ pub fn get_mocks() -> HashMap<Input, Output> {
                 name: String::from("California"),
                 code: String::from("CA"),
             }),
-            None,
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
             None,
             None,
             "Los Angeles, CA, US",

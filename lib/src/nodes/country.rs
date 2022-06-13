@@ -36,8 +36,8 @@ impl fmt::Display for Country {
 
 #[derive(Debug)]
 pub struct CountriesMap {
-    code_to_name: HashMap<String, String>,
-    name_to_code: HashMap<String, String>,
+    pub code_to_name: HashMap<String, String>,
+    pub name_to_code: HashMap<String, String>,
 }
 
 impl Parser {
@@ -269,22 +269,6 @@ mod tests {
             name: String::from("United States"),
         };
         assert_eq!(format!("{}", country), "US");
-    }
-
-    #[test]
-    fn test_fill_country() {
-        let parser = Parser::new();
-        for (input, output) in mocks::get_mocks() {
-            let mut location = Location {
-                city: None,
-                state: None,
-                country: None,
-                zipcode: None,
-                address: None,
-            };
-            parser.fill_country(&mut location, &input);
-            assert_eq!(location.country, output.2, "input: {}", input);
-        }
     }
 
     #[test]

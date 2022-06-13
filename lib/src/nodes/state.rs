@@ -105,19 +105,23 @@ impl Parser {
                 }
             };
         }
+        let country_codes: Vec<String> = self.countries.code_to_name.keys().cloned().collect();
         // When analyzing locations such as `Sherwood Park, AB, CA`
         // we may end up having more than one state, in that case
         // use the one that doesn't look like a country
         match candidates.len() {
             0 => (),
             1 => {
-                location.state = Some(candidates.first().unwrap().0.clone());
-                if location.country.is_none() {
-                    location.country = Some(candidates.first().unwrap().1.clone());
+                let s = candidates.first().unwrap().0.clone();
+                let c = candidates.first().unwrap().1.clone();
+                if !country_codes.contains(&s.code) || location.country == Some(c.clone()) {
+                    location.state = Some(s);
+                    if location.country.is_none() {
+                        location.country = Some(c);
+                    }
                 }
             }
             _ => {
-                let country_codes: Vec<String> = countries.iter().map(|x| x.code.clone()).collect();
                 let filtered_candidates: Vec<(State, Country)> = candidates
                     .into_iter()
                     .filter(|(x, _)| !country_codes.contains(&x.code))
@@ -334,23 +338,6 @@ mod tests {
             name: String::from("Ontario"),
         };
         assert_eq!(format!("{}", state), "ON");
-    }
-
-    #[test]
-    fn test_fill_state() {
-        let parser = Parser::new();
-        for (input, output) in mocks::get_mocks() {
-            let mut location = Location {
-                city: None,
-                state: None,
-                country: None,
-                zipcode: None,
-                address: None,
-            };
-            parser.fill_special_case_city(&mut location, &input);
-            parser.fill_state(&mut location, &input);
-            assert_eq!(output.1, location.state, "input: {}", input);
-        }
     }
 
     #[test]
