@@ -114,12 +114,16 @@ impl Parser {
             1 => {
                 let s = candidates.first().unwrap().0.clone();
                 let c = candidates.first().unwrap().1.clone();
-                if !country_codes.contains(&s.code) || location.country == Some(c.clone()) {
-                    location.state = Some(s);
-                    if location.country.is_none() {
-                        location.country = Some(c);
-                    }
+                location.state = Some(s);
+                if location.country.is_none() {
+                    location.country = Some(c);
                 }
+                // if !country_codes.contains(&s.code) || location.country == Some(c.clone()) {
+                //     location.state = Some(s);
+                //     if location.country.is_none() {
+                //         location.country = Some(c);
+                //     }
+                // }
             }
             _ => {
                 let filtered_candidates: Vec<(State, Country)> = candidates

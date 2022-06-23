@@ -238,6 +238,25 @@ pub fn get_mocks() -> HashMap<Input, Output> {
         ),
     );
     locations.insert(
+        "Hanover, MD",
+        (
+            Some(City {
+                name: String::from("Hanover"),
+            }),
+            Some(State {
+                code: String::from("MD"),
+                name: String::from("Maryland"),
+            }),
+            Some(Country {
+                code: String::from("US"),
+                name: String::from("United States"),
+            }),
+            None,
+            None,
+            "Hanover, MD, US",
+        ),
+    );
+    locations.insert(
         "Lansing, MI, US, 48911",
         (
             Some(City {
