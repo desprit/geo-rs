@@ -140,9 +140,20 @@ impl Parser {
         if input.contains("CA") {
             location.country = Some(CANADA.clone());
         }
-        // Search full country name in the input string
+        // Search fill country name in the input string, ignore country if code is also US or CA state,
+        // For example, ignore country code PA (Panama) because it's also Pennsylvania
         for (country_name, country_code) in self.countries.name_to_code.iter() {
             if as_lowercase.contains(&country_name.to_lowercase()) {
+                if let Some(us_states) = self.states.get("US") {
+                    if us_states.name_to_code.keys().find(|name| name.contains(country_name)).is_some() {
+                        continue;
+                    }
+                }
+                if let Some(ca_states) = self.states.get("CA") {
+                    if ca_states.name_to_code.keys().find(|name| name.contains(country_name)).is_some() {
+                        continue;
+                    }
+                }
                 location.country = Some(Country {
                     name: String::from(country_name),
                     code: String::from(country_code),
