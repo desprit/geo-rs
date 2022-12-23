@@ -105,15 +105,21 @@ impl Parser {
                 }
             };
         }
+        let mut candidates_deduped: Vec<(State, Country)> = vec![];
+        for (state, country) in &candidates {
+            if !candidates_deduped.contains(&(state.clone(), country.clone())) {
+                candidates_deduped.push((state.clone(), country.clone()));
+            }
+        }
         let country_codes: Vec<String> = self.countries.code_to_name.keys().cloned().collect();
         // When analyzing locations such as `Sherwood Park, AB, CA`
         // we may end up having more than one state, in that case
         // use the one that doesn't look like a country
-        match candidates.len() {
+        match candidates_deduped.len() {
             0 => (),
             1 => {
-                let s = candidates.first().unwrap().0.clone();
-                let c = candidates.first().unwrap().1.clone();
+                let s = candidates_deduped.first().unwrap().0.clone();
+                let c = candidates_deduped.first().unwrap().1.clone();
                 location.state = Some(s);
                 if location.country.is_none() {
                     location.country = Some(c);
@@ -126,7 +132,7 @@ impl Parser {
                 // }
             }
             _ => {
-                let filtered_candidates: Vec<(State, Country)> = candidates
+                let filtered_candidates: Vec<(State, Country)> = candidates_deduped
                     .into_iter()
                     .filter(|(x, _)| !country_codes.contains(&x.code))
                     .collect();
@@ -342,6 +348,21 @@ mod tests {
             name: String::from("Ontario"),
         };
         assert_eq!(format!("{}", state), "ON");
+    }
+
+    #[test]
+    fn test_fill_state() {
+        let parser = Parser::new();
+        let input = String::from("Northwood, ND, 104 ND-15");
+        let mut location = Location {
+            city: None,
+            state: None,
+            country: None,
+            zipcode: None,
+            address: None,
+        };
+        parser.fill_state(&mut location, &input);
+        assert_eq!(location.state.unwrap().code, String::from("ND"));
     }
 
     #[test]
