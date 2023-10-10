@@ -145,12 +145,22 @@ impl Parser {
         for (country_name, country_code) in self.countries.name_to_code.iter() {
             if as_lowercase.contains(&country_name.to_lowercase()) {
                 if let Some(us_states) = self.states.get("US") {
-                    if us_states.name_to_code.keys().find(|name| name.contains(country_name)).is_some() {
+                    if us_states
+                        .name_to_code
+                        .keys()
+                        .find(|name| name == &country_name)
+                        .is_some()
+                    {
                         continue;
                     }
                 }
                 if let Some(ca_states) = self.states.get("CA") {
-                    if ca_states.name_to_code.keys().find(|name| name.contains(country_name)).is_some() {
+                    if ca_states
+                        .name_to_code
+                        .keys()
+                        .find(|name| name == &country_name)
+                        .is_some()
+                    {
                         continue;
                     }
                 }
