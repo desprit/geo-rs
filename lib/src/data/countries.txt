@@ -24,7 +24,7 @@ Belize;BZ
 Benin;BJ
 Bermuda;BM
 Bhutan;BT
-Bolivia, Plurinational State of;BO
+Bolivia;BO
 Bonaire, Sint Eustatius and Saba;BQ
 Bosnia and Herzegovina;BA
 Botswana;BW
@@ -58,6 +58,7 @@ Cuba;CU
 Curaçao;CW
 Cyprus;CY
 Czech Republic;CZ
+Czechia;CZ
 Denmark;DK
 Djibouti;DJ
 Dominica;DM
