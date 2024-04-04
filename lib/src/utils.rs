@@ -55,6 +55,8 @@ pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
 pub fn clean(s: &mut String) {
     *s = s.replace("'s", "s");
     *s = s.replace("St. ", "Saint ");
+    *s = s.replace("Ft. ", "Fort ");
+    *s = s.replace("FT. ", "FORT ");
     *s = RE_ABBREVIATIONS.replace_all(&s, "").to_string();
     // find values in brackets and if it contain digits, remove everything in brackets
     // example: `CA-ON-Oakville-3235 (Store# 04278)` - we DON'T need value in brackets
@@ -156,7 +158,7 @@ mod tests {
         assert_eq!(s, "BULLHEAD CITY FORT MOHAVE, Arizona, 86426".to_string());
         let mut s = "Ft. Meade, MD, US".to_string();
         clean(&mut s);
-        assert_eq!(s, "Ft. Meade, MD, US".to_string());
+        assert_eq!(s, "Fort Meade, MD, US".to_string());
         let mut s = "Cupertino - Stevens Creek".to_string();
         clean(&mut s);
         assert_eq!(s, "Cupertino - Stevens Creek".to_string());
@@ -181,6 +183,9 @@ mod tests {
         let mut s = "Canton,MA,Canton,MA,US".to_string();
         clean(&mut s);
         assert_eq!(s, "Canton, MA, US".to_string());
+        let mut s = "FT. BELVOIR, VA, US, 22060, FT. BELVOIR".to_string();
+        clean(&mut s);
+        assert_eq!(s, "FORT BELVOIR, VA, US, 22060".to_string());
     }
 
     #[test]
