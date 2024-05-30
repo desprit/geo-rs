@@ -132,6 +132,8 @@ impl Parser {
                 // }
             }
             _ => {
+                let first_candidate_state = candidates_deduped.first().unwrap().0.clone();
+                let first_candidate_country = candidates_deduped.first().unwrap().1.clone();
                 let filtered_candidates: Vec<(State, Country)> = candidates_deduped
                     .into_iter()
                     .filter(|(x, _)| !country_codes.contains(&x.code))
@@ -140,6 +142,13 @@ impl Parser {
                     location.state = Some(filtered_candidates.first().unwrap().0.clone());
                     if location.country.is_none() {
                         location.country = Some(filtered_candidates.first().unwrap().1.clone());
+                    }
+                }
+                if filtered_candidates.len() == 0 {
+                    // pick first candidate
+                    location.state = Some(first_candidate_state);
+                    if location.country.is_none() {
+                        location.country = Some(first_candidate_country);
                     }
                 }
             }
