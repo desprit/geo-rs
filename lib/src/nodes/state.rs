@@ -1,4 +1,5 @@
 use super::{Country, Location, CANADA, UNITED_STATES};
+use crate::nodes::CitiesMap;
 use crate::{utils, Parser};
 use std::collections::HashMap;
 use std::fmt;
@@ -62,10 +63,23 @@ impl Parser {
             Some(c) => vec![c.clone()],
             None => vec![UNITED_STATES.clone(), CANADA.clone()],
         };
+
         // Search by a full match of input and state name
         for c in &countries {
+            let default = CitiesMap::default();
+            let country_cities = self.cities.get(&c.code).unwrap_or(&default);
+            // also split by ":" and take the second part
+            let city_names = country_cities
+                .cities_by_state
+                .values()
+                .flatten()
+                .collect::<Vec<_>>();
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
+                    // check if state name isn't a city
+                    if city_names.contains(&&name.to_string().to_lowercase()) {
+                        continue;
+                    }
                     if as_lowercase.contains(&name.to_lowercase()) {
                         location.state = Some(State {
                             code: code.clone(),
@@ -134,10 +148,27 @@ impl Parser {
             _ => {
                 let first_candidate_state = candidates_deduped.first().unwrap().0.clone();
                 let first_candidate_country = candidates_deduped.first().unwrap().1.clone();
-                let filtered_candidates: Vec<(State, Country)> = candidates_deduped
-                    .into_iter()
-                    .filter(|(x, _)| !country_codes.contains(&x.code))
-                    .collect();
+
+                let mut filtered_candidates: Vec<(State, Country)> = match &location.country {
+                    Some(_) => candidates_deduped.clone(),
+                    None => candidates_deduped
+                        .into_iter()
+                        .filter(|(x, _)| !country_codes.contains(&x.code))
+                        .collect(),
+                };
+                // [(State { name: "Washington", code: "WA" }, Country { name: "United States", code: "US" }), (State { name: "Pennsylvania", code: "PA" }, Country { name: "United States", code: "US" })]
+                // Iterate over candidates and choose more likely state: if one candidate has name in the input string and
+                // another candidate has code in the input string pick the second one because state is usually written as code
+                filtered_candidates.sort_by(|a, b| {
+                    if as_lowercase.contains(&a.0.name.to_lowercase()) {
+                        return std::cmp::Ordering::Less;
+                    }
+                    if as_lowercase.contains(&a.0.code.to_lowercase()) {
+                        return std::cmp::Ordering::Greater;
+                    }
+                    std::cmp::Ordering::Equal
+                });
+
                 if filtered_candidates.len() == 1 {
                     location.state = Some(filtered_candidates.first().unwrap().0.clone());
                     if location.country.is_none() {

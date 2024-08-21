@@ -210,6 +210,15 @@ pub struct CitiesMap {
     pub state_of_city: HashMap<String, String>,
 }
 
+impl Default for CitiesMap {
+    fn default() -> Self {
+        CitiesMap {
+            cities_by_state: HashMap::new(),
+            state_of_city: HashMap::new(),
+        }
+    }
+}
+
 pub type CountryCities = HashMap<String, CitiesMap>;
 
 /// Read US and CA states GEO data and create a map between
