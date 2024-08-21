@@ -160,12 +160,26 @@ impl Parser {
                 // Iterate over candidates and choose more likely state: if one candidate has name in the input string and
                 // another candidate has code in the input string pick the second one because state is usually written as code
                 filtered_candidates.sort_by(|a, b| {
-                    if as_lowercase.contains(&a.0.name.to_lowercase()) {
+                    let a_state_code_in_str = as_lowercase.contains(&a.0.code.to_lowercase());
+                    let b_state_code_in_str = as_lowercase.contains(&b.0.code.to_lowercase());
+
+                    if a_state_code_in_str && !b_state_code_in_str {
                         return std::cmp::Ordering::Less;
                     }
-                    if as_lowercase.contains(&a.0.code.to_lowercase()) {
+                    if !a_state_code_in_str && b_state_code_in_str {
                         return std::cmp::Ordering::Greater;
                     }
+
+                    let a_state_name_in_str = as_lowercase.contains(&a.0.name.to_lowercase());
+                    let b_state_name_in_str = as_lowercase.contains(&b.0.name.to_lowercase());
+
+                    if a_state_name_in_str && !b_state_name_in_str {
+                        return std::cmp::Ordering::Greater;
+                    }
+                    if !a_state_name_in_str && b_state_name_in_str {
+                        return std::cmp::Ordering::Less;
+                    }
+
                     std::cmp::Ordering::Equal
                 });
 
@@ -180,6 +194,13 @@ impl Parser {
                     location.state = Some(first_candidate_state);
                     if location.country.is_none() {
                         location.country = Some(first_candidate_country);
+                    }
+                }
+                if filtered_candidates.len() > 1 {
+                    let first_candidate = filtered_candidates.first().unwrap();
+                    location.state = Some(first_candidate.0.clone());
+                    if location.country.is_none() {
+                        location.country = Some(first_candidate.1.clone());
                     }
                 }
             }
