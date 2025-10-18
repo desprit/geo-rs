@@ -243,7 +243,42 @@ impl Parser {
             .filter(|s| s != &state.code.as_str())
             .collect::<Vec<_>>()
             .join(" ");
-        if let Some(p) = input.to_lowercase().find(&state.name.to_lowercase()) {
+
+        let input_lowercase = input.to_lowercase();
+        let state_name_lowercase = state.name.to_lowercase();
+
+        // Find all occurrences of the state name in the input (case-insensitive)
+        // and collect those that have proper word boundaries
+        let mut valid_positions = Vec::new();
+        let mut search_start = 0;
+        while let Some(p) = input_lowercase[search_start..].find(&state_name_lowercase) {
+            let absolute_pos = search_start + p;
+            // Check if this is a complete word/phrase, not part of another word
+            // by verifying the character before and after are not alphanumeric
+            let is_start_boundary = absolute_pos == 0 || {
+                input_lowercase[..absolute_pos]
+                    .chars()
+                    .last()
+                    .map(|c| !c.is_alphanumeric())
+                    .unwrap_or(true)
+            };
+            let end_pos = absolute_pos + state_name_lowercase.len();
+            let is_end_boundary = end_pos >= input_lowercase.len() || {
+                input_lowercase[end_pos..]
+                    .chars()
+                    .next()
+                    .map(|c| !c.is_alphanumeric())
+                    .unwrap_or(true)
+            };
+
+            if is_start_boundary && is_end_boundary {
+                valid_positions.push(absolute_pos);
+            }
+            search_start = absolute_pos + 1;
+        }
+
+        // Remove the state name if we found valid occurrences
+        if !valid_positions.is_empty() {
             // Easy cases with the same state and city "New York, NY, US"
             if !utils::split(&input_raw).contains(&state.code.as_str()) {
                 // remove state name only if it's not a part of cities
@@ -260,7 +295,11 @@ impl Parser {
                                 .all(|s| !parts.contains(&s))
                         }) || !input.starts_with(&state.name)
                         {
-                            input.replace_range(p..p + state.name.chars().count(), "");
+                            // Remove state name occurrences from right to left to maintain valid positions
+                            for p in valid_positions.iter().rev() {
+                                let state_name_len = state.name.len();
+                                input.replace_range(*p..*p + state_name_len, "");
+                            }
                         }
                     }
                 }
@@ -474,6 +513,13 @@ mod tests {
         let mut location = String::from("United States-District of Columbia-washington-20340-DCCL");
         parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
         assert_eq!(location, String::from("United States-washington-20340"));
+        let state = State {
+            code: String::from("IN"),
+            name: String::from("Indiana"),
+        };
+        let mut location = String::from("Indianapolis, Indiana");
+        parser.remove_state(&state, &UNITED_STATES.clone(), &mut location);
+        assert_eq!(location, String::from("Indianapolis"));
     }
 
     #[test]

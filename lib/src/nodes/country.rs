@@ -143,7 +143,9 @@ impl Parser {
         // Search fill country name in the input string, ignore country if code is also US or CA state,
         // For example, ignore country code PA (Panama) because it's also Pennsylvania
         for (country_name, country_code) in self.countries.name_to_code.iter() {
-            if as_lowercase.contains(&country_name.to_lowercase()) {
+            if utils::split(&as_lowercase.to_string())
+                .contains(&country_name.to_lowercase().as_str())
+            {
                 if let Some(us_states) = self.states.get("US") {
                     if us_states
                         .name_to_code
