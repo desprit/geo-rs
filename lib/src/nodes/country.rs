@@ -338,9 +338,10 @@ mod tests {
     fn benchmark_fill_country() {
         let n = 250;
         let parser = Parser::new();
+        let mocks = mocks::get_mocks();
         let before = std::time::Instant::now();
         for _ in 0..n {
-            for country in mocks::get_mocks().keys() {
+            for country in mocks.keys() {
                 let mut location = Location {
                     city: None,
                     state: None,
@@ -354,7 +355,7 @@ mod tests {
         println!(
             "Elapsed time: {:.2?}, {:.2?} each",
             before.elapsed(),
-            before.elapsed() / (n * mocks::get_mocks().len() as u32)
+            before.elapsed() / (n * mocks.len() as u32)
         );
     }
 }
