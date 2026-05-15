@@ -2,6 +2,7 @@ use super::{Country, Location, CANADA, UNITED_STATES};
 use crate::nodes::CitiesMap;
 use crate::{utils, Parser};
 use aho_corasick::AhoCorasick;
+use smallvec::SmallVec;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
@@ -87,7 +88,7 @@ impl Parser {
             }
         }
         // Search by input containing state code or state name
-        let mut candidates: Vec<(State, Country)> = vec![];
+        let mut candidates: SmallVec<[(State, Country); 4]> = SmallVec::new();
         for c in &countries {
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
@@ -112,7 +113,7 @@ impl Parser {
                 }
             };
         }
-        let mut candidates_deduped: Vec<(State, Country)> = vec![];
+        let mut candidates_deduped: SmallVec<[(State, Country); 4]> = SmallVec::new();
         for (state, country) in &candidates {
             if !candidates_deduped.contains(&(state.clone(), country.clone())) {
                 candidates_deduped.push((state.clone(), country.clone()));
@@ -136,7 +137,7 @@ impl Parser {
                 let first_candidate_state = candidates_deduped.first().unwrap().0.clone();
                 let first_candidate_country = candidates_deduped.first().unwrap().1.clone();
 
-                let mut filtered_candidates: Vec<(State, Country)> = match &location.country {
+                let mut filtered_candidates: SmallVec<[(State, Country); 4]> = match &location.country {
                     Some(_) => candidates_deduped.clone(),
                     None => candidates_deduped
                         .into_iter()

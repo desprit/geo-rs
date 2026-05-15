@@ -2,6 +2,7 @@ use crate::nodes::country::UNITED_STATES;
 use crate::nodes::State;
 use crate::utils;
 use crate::{Location, Parser};
+use smallvec::SmallVec;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use titlecase::titlecase;
@@ -107,7 +108,7 @@ impl Parser {
                 },
             };
             if let Some(country_cities) = &self.cities.get(&c.code) {
-                let mut candidates: Vec<(String, String)> = vec![];
+                let mut candidates: SmallVec<[(String, String); 4]> = SmallVec::new();
 
                 // O(1) exact match: look up the first input word in the city_to_states index.
                 // city_to_states keys are lowercase; input_first_word is also lowercase.
@@ -135,7 +136,7 @@ impl Parser {
                         }
                     }
                 }
-                let mut ranged_candidates: Vec<(String, String)> = vec![];
+                let mut ranged_candidates: SmallVec<[(String, String); 4]> = SmallVec::new();
                 if candidates.len() >= 1 && candidates.len() < 3 {
                     if candidates.len() > 1 {
                         debug!(
@@ -171,7 +172,7 @@ impl Parser {
                                 continue;
                             }
                             if city_full_match && state_match {
-                                ranged_candidates = vec![candidate.clone()];
+                                ranged_candidates = SmallVec::from_elem(candidate.clone(), 1);
                                 break;
                             }
                             if city_part_match && state_match {
