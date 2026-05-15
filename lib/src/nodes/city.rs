@@ -2,7 +2,7 @@ use crate::nodes::country::UNITED_STATES;
 use crate::nodes::State;
 use crate::utils;
 use crate::{Location, Parser};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use titlecase::titlecase;
 
@@ -208,8 +208,9 @@ impl Parser {
 pub struct CitiesMap {
     pub cities_by_state: HashMap<String, Vec<String>>,
     // Maps city_name (lowercase) → all state codes that contain it.
-    // Enables O(1) exact-match lookup; replaces the old state_of_city map.
     pub city_to_states: HashMap<String, Vec<String>>,
+    // All city names (lowercase) for O(1) membership check.
+    pub city_names_set: HashSet<String>,
 }
 
 impl Default for CitiesMap {
@@ -217,6 +218,7 @@ impl Default for CitiesMap {
         CitiesMap {
             cities_by_state: HashMap::new(),
             city_to_states: HashMap::new(),
+            city_names_set: HashSet::new(),
         }
     }
 }
@@ -240,6 +242,7 @@ pub fn read_cities() -> HashMap<String, CitiesMap> {
     for (country, content) in [("US", US_CITIES), ("CA", CA_CITIES)] {
         let mut cities_by_state: HashMap<String, Vec<String>> = HashMap::new();
         let mut city_to_states: HashMap<String, Vec<String>> = HashMap::new();
+        let mut city_names_set: HashSet<String> = HashSet::new();
         for line in content.lines() {
             let parts: Vec<&str> = line.split(';').collect();
             if parts.len() < 2 || parts[1].len() <= 3 { continue; }
@@ -250,11 +253,12 @@ pub fn read_cities() -> HashMap<String, CitiesMap> {
                 .or_default()
                 .push(city_lower.clone());
             city_to_states
-                .entry(city_lower)
+                .entry(city_lower.clone())
                 .or_default()
                 .push(state_code);
+            city_names_set.insert(city_lower);
         }
-        data.insert(country.to_string(), CitiesMap { cities_by_state, city_to_states });
+        data.insert(country.to_string(), CitiesMap { cities_by_state, city_to_states, city_names_set });
     }
     data
 }
@@ -376,6 +380,16 @@ mod tests {
             before.elapsed(),
             before.elapsed() / (n * mocks.len() as u32)
         );
+    }
+
+    #[test]
+    fn test_city_names_set_populated() {
+        let cities = read_cities();
+        let us = cities.get("US").unwrap();
+        assert!(us.city_names_set.contains("new york"), "city_names_set should contain lowercase city names");
+        assert!(us.city_names_set.contains("los angeles"));
+        let ca = cities.get("CA").unwrap();
+        assert!(ca.city_names_set.contains("toronto"));
     }
 
     #[test]

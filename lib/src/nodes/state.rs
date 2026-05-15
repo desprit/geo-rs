@@ -54,7 +54,7 @@ impl Parser {
         if location.state.is_some() {
             return;
         }
-        let as_lowercase = input.to_lowercase().to_string();
+        let as_lowercase = input.to_lowercase();
         let mut parts = utils::split(input);
         parts.dedup();
         let mut parts_lowercase = utils::split(&as_lowercase);
@@ -68,16 +68,10 @@ impl Parser {
         for c in &countries {
             let default = CitiesMap::default();
             let country_cities = self.cities.get(&c.code).unwrap_or(&default);
-            // also split by ":" and take the second part
-            let city_names = country_cities
-                .cities_by_state
-                .values()
-                .flatten()
-                .collect::<Vec<_>>();
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
                     // check if state name isn't a city
-                    if city_names.contains(&&name.to_string().to_lowercase()) {
+                    if country_cities.city_names_set.contains(&name.to_lowercase()) {
                         continue;
                     }
                     if as_lowercase.contains(&name.to_lowercase()) {
