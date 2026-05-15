@@ -77,9 +77,8 @@ impl Parser {
             self.remove_country(c, &mut remainder);
         }
         self.fill_city(&mut output, &remainder);
-        if let Some(c) = output.city {
-            output.city = Some(c.clone());
-            self.remove_city(&mut remainder, &c);
+        if let Some(ref c) = output.city {
+            self.remove_city(&mut remainder, c);
         }
         if output.city.is_none() && remainder.chars().count() > 0 {
             output.city = Some(City {

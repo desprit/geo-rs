@@ -86,7 +86,7 @@ impl Parser {
     /// assert_eq!(city.name, String::from("Toronto"));
     /// ```
     pub fn fill_city(&self, location: &mut Location, input: &str) {
-        if location.state.is_some() & location.country.is_none() {
+        if location.state.is_some() && location.country.is_none() {
             self.fill_country_from_state(location);
         }
         let input_first_word = input
@@ -200,7 +200,6 @@ impl Parser {
                 }
             }
         }
-        utils::decode(location);
     }
 }
 
