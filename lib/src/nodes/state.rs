@@ -138,12 +138,6 @@ impl Parser {
                 if location.country.is_none() {
                     location.country = Some(c);
                 }
-                // if !country_codes.contains(&s.code) || location.country == Some(c.clone()) {
-                //     location.state = Some(s);
-                //     if location.country.is_none() {
-                //         location.country = Some(c);
-                //     }
-                // }
             }
             _ => {
                 let first_candidate_state = candidates_deduped.first().unwrap().0.clone();

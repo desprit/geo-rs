@@ -115,9 +115,6 @@ mod tests {
     #[test]
     fn test_format_location() {
         let mut locations: HashMap<&str, &str> = HashMap::new();
-        // locations.insert("Moscow, Russia", "Moscow, RU");
-        // locations.insert("Pune Maharashtra India", "Pune Maharashtra, IN");
-        // locations.insert("China, Shanghai (CHN)", "Shanghai, CN");
         locations.insert("Kenogami Mill , Quebec, Canada", "Kenogami Mill, QC, CA");
         locations.insert("Montréal, Québec, CAN", "Montreal, QC, CA");
         locations.insert(
@@ -126,7 +123,6 @@ mod tests {
         );
         locations.insert("Wilkes-Barre, Pennsylvania (PA)", "Wilkes Barre, PA, US");
         locations.insert("Sausalito, US", "Sausalito, CA, US");
-        // locations.insert("Lee's Summit, Missouri", "MO, US");
         locations.insert(
             "United States-California-San Diego-US CA San Diego - W. Brdway",
             "San Diego, CA, US",
@@ -187,10 +183,6 @@ mod tests {
             "United States-District of Columbia-washington-20340-DCCL",
             "Washington, DC, US, 20340",
         );
-        // locations.insert(
-        //     "01713-Mall At Greece Ridge Center",
-        //     "Mall At Greece Ridge Center, 01713",
-        // );
         locations.insert(
             "New Westminster, British Columbia, Canada",
             "New Westminster, BC, CA",
