@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate log;
 extern crate unidecode;
+#[cfg(test)]
 mod mocks;
 pub mod nodes;
 pub mod utils;
