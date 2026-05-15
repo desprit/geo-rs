@@ -20,6 +20,9 @@ impl fmt::Display for Address {
 }
 
 impl Parser {
+    // NOTE: fill_address and remove_address are not yet called from parse_location.
+    // The Address field in Location is always None in the current pipeline.
+    // See README TODO: "Extract street address part".
     pub fn remove_address(&self, s: &mut String, address: &Address) {
         *s = s.replace(&address.address, "");
         utils::clean(s);
