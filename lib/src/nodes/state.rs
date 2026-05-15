@@ -1,7 +1,7 @@
 use super::{Country, Location, CANADA, UNITED_STATES};
 use crate::nodes::CitiesMap;
 use crate::{utils, Parser};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 #[derive(Debug, Clone, Hash, Eq)]
@@ -93,7 +93,7 @@ impl Parser {
             if let Some(states) = self.states.get(&c.code) {
                 for (code, name) in &states.code_to_name {
                     for part in &parts {
-                        if code == &part.to_string() {
+                        if code.as_str() == *part {
                             let state = State {
                                 code: code.clone(),
                                 name: name.clone(),
@@ -101,14 +101,14 @@ impl Parser {
                             candidates.push((state, c.clone()));
                         }
                     }
-                    if name.split_whitespace().all(|s| {
-                        return parts_lowercase.contains(&s.to_lowercase().as_str());
-                    }) {
-                        let state = State {
-                            code: code.clone(),
-                            name: name.clone(),
-                        };
-                        candidates.push((state, c.clone()));
+                    if let Some(name_lower) = states.code_to_name_lower.get(code.as_str()) {
+                        if name_lower.split_whitespace().all(|s| parts_lowercase.contains(&s)) {
+                            let state = State {
+                                code: code.clone(),
+                                name: name.clone(),
+                            };
+                            candidates.push((state, c.clone()));
+                        }
                     }
                 }
             };
@@ -362,6 +362,10 @@ impl Parser {
 pub struct StatesMap {
     pub code_to_name: HashMap<String, String>,
     pub name_to_code: HashMap<String, String>,
+    // key: uppercase state code (e.g. "CA"), value: lowercase state name (e.g. "california")
+    pub code_to_name_lower: HashMap<String, String>,
+    // all lowercase state names, for O(1) lookup
+    pub name_lower_set: HashSet<String>,
 }
 
 pub type CountryStates = HashMap<String, StatesMap>;
@@ -383,13 +387,22 @@ pub fn read_states() -> HashMap<String, StatesMap> {
     for (country, content) in [("US", US_STATES), ("CA", CA_STATES)] {
         let mut name_to_code: HashMap<String, String> = HashMap::new();
         let mut code_to_name: HashMap<String, String> = HashMap::new();
+        let mut code_to_name_lower: HashMap<String, String> = HashMap::new();
+        let mut name_lower_set: HashSet<String> = HashSet::new();
         for line in content.lines() {
             let parts: Vec<&str> = line.split(';').collect();
             if parts.len() < 2 { continue; }
-            name_to_code.insert(parts[1].to_string(), parts[0].to_string());
-            code_to_name.insert(parts[0].to_string(), parts[1].to_string());
+            let code = parts[0].to_string();
+            let name = parts[1].to_string();
+            let name_lower = name.to_lowercase();
+            code_to_name_lower.insert(code.clone(), name_lower.clone());
+            name_lower_set.insert(name_lower);
+            name_to_code.insert(name.clone(), code.clone());
+            code_to_name.insert(code, name);
         }
-        data.insert(country.to_string(), StatesMap { name_to_code, code_to_name });
+        data.insert(country.to_string(), StatesMap {
+            name_to_code, code_to_name, code_to_name_lower, name_lower_set,
+        });
     }
     data
 }
@@ -547,6 +560,19 @@ mod tests {
         };
         parser.fill_country_from_state(&mut location);
         assert_eq!(location.country.unwrap(), CANADA.clone());
+    }
+
+    #[test]
+    fn test_states_map_lower_fields() {
+        let states = read_states();
+        let us = states.get("US").unwrap();
+        assert_eq!(us.code_to_name_lower.get("CA"), Some(&"california".to_string()));
+        assert_eq!(us.code_to_name_lower.get("NY"), Some(&"new york".to_string()));
+        assert!(us.name_lower_set.contains("california"));
+        assert!(us.name_lower_set.contains("new york"));
+        let ca = states.get("CA").unwrap();
+        assert_eq!(ca.code_to_name_lower.get("ON"), Some(&"ontario".to_string()));
+        assert!(ca.name_lower_set.contains("ontario"));
     }
 
     /// cargo test benchmark_fill_state -- --nocapture --ignored
