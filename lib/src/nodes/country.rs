@@ -2,6 +2,7 @@ use super::Location;
 use crate::utils;
 use crate::Parser;
 use aho_corasick::AhoCorasick;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::LazyLock;
@@ -73,7 +74,11 @@ impl Parser {
         if location.country.is_some() {
             return;
         }
-        let as_lowercase = input.to_lowercase();
+        let as_lowercase: Cow<str> = if input.bytes().any(|b| b.is_ascii_uppercase()) {
+            Cow::Owned(input.to_lowercase())
+        } else {
+            Cow::Borrowed(input)
+        };
         let parts = utils::split(&as_lowercase);
         for part in &parts {
             if vec!["usa", "us"].contains(&part) {
@@ -159,7 +164,7 @@ impl Parser {
             location.country = Some(CANADA.clone());
         }
         // Search country name in the input — single AC pass with word-boundary verification
-        for mat in self.countries.name_ac.find_iter(as_lowercase.as_str()) {
+        for mat in self.countries.name_ac.find_iter(as_lowercase.as_ref()) {
             let (country_code, name_lower) = &self.countries.name_patterns[mat.pattern().as_usize()];
             // Verify the match falls on a word boundary (non-alphanumeric surroundings)
             let start = mat.start();

@@ -3,6 +3,7 @@ use crate::nodes::CitiesMap;
 use crate::{utils, Parser};
 use aho_corasick::AhoCorasick;
 use smallvec::SmallVec;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
@@ -56,7 +57,11 @@ impl Parser {
         if location.state.is_some() {
             return;
         }
-        let as_lowercase = input.to_lowercase();
+        let as_lowercase: Cow<str> = if input.bytes().any(|b| b.is_ascii_uppercase()) {
+            Cow::Owned(input.to_lowercase())
+        } else {
+            Cow::Borrowed(input)
+        };
         let mut parts = utils::split(input);
         parts.dedup();
         let mut parts_lowercase = utils::split(&as_lowercase);
@@ -71,7 +76,7 @@ impl Parser {
             let default = CitiesMap::default();
             let country_cities = self.cities.get(&c.code).unwrap_or(&default);
             if let Some(states) = self.states.get(&c.code) {
-                for mat in states.name_ac.find_iter(as_lowercase.as_str()) {
+                for mat in states.name_ac.find_iter(as_lowercase.as_ref()) {
                     let (code, name_lower) = &states.name_patterns[mat.pattern().as_usize()];
                     if country_cities.city_names_set.contains(name_lower.as_str()) {
                         continue;
