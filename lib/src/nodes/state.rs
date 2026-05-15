@@ -382,25 +382,20 @@ pub type CountryStates = HashMap<String, StatesMap>;
 /// let states = geo_rs::nodes::read_states();
 /// ```
 pub fn read_states() -> HashMap<String, StatesMap> {
+    static US_STATES: &str = include_str!("../data/US/states.txt");
+    static CA_STATES: &str = include_str!("../data/CA/states.txt");
+
     let mut data: HashMap<String, StatesMap> = HashMap::new();
-    for country in ["US", "CA"].iter() {
-        let filename = format!("{}/{}.txt", &country, "states");
+    for (country, content) in [("US", US_STATES), ("CA", CA_STATES)] {
         let mut name_to_code: HashMap<String, String> = HashMap::new();
         let mut code_to_name: HashMap<String, String> = HashMap::new();
-        for line in utils::read_lines(&filename) {
-            if let Ok(s) = line {
-                let parts: Vec<&str> = s.split(";").collect();
-                name_to_code.insert(parts[1].to_string(), parts[0].to_string());
-                code_to_name.insert(parts[0].to_string(), parts[1].to_string());
-            }
+        for line in content.lines() {
+            let parts: Vec<&str> = line.split(';').collect();
+            if parts.len() < 2 { continue; }
+            name_to_code.insert(parts[1].to_string(), parts[0].to_string());
+            code_to_name.insert(parts[0].to_string(), parts[1].to_string());
         }
-        data.insert(
-            country.to_string(),
-            StatesMap {
-                name_to_code,
-                code_to_name,
-            },
-        );
+        data.insert(country.to_string(), StatesMap { name_to_code, code_to_name });
     }
     data
 }

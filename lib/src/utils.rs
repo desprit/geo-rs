@@ -2,10 +2,6 @@ use crate::{Country, Location};
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::path::Path;
 use unidecode::unidecode;
 
 lazy_static! {
@@ -17,25 +13,6 @@ lazy_static! {
     static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
     static ref RE_ABBREVIATIONS: Regex =
         Regex::new(r"\b(?:[QWRTPSDFGHKLZXCVBNM]{3,5}\b|(?:[A-Za-z]\.){3,})\s*").unwrap();
-}
-
-/// Read file with the given name from `src/data` folder and return `std::io::Lines`
-///
-/// # Arguments
-///
-/// * `filename` - Name of the file to read
-///
-/// # Examples
-///
-/// ```
-/// use geo_rs;
-/// let lines = geo_rs::utils::read_lines("countries.txt");
-/// ```
-pub fn read_lines(filename: &str) -> std::io::Lines<BufReader<File>> {
-    let data_path = format!("{}/src/data", env!("CARGO_MANIFEST_DIR"));
-    let file_path = Path::new(&data_path).join(&filename);
-    let file = File::open(file_path).unwrap();
-    io::BufReader::new(file).lines()
 }
 
 /// Remove useless garbage from the given string, e.g. trailing commas, values in brackets, etc.

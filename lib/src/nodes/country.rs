@@ -253,19 +253,16 @@ impl Parser {
 /// let countries = geo_rs::nodes::read_countries();
 /// ```
 pub fn read_countries() -> CountriesMap {
+    let content = include_str!("../data/countries.txt");
     let mut name_to_code: HashMap<String, String> = HashMap::new();
     let mut code_to_name: HashMap<String, String> = HashMap::new();
-    for line in utils::read_lines("countries.txt") {
-        if let Ok(s) = line {
-            let parts: Vec<&str> = s.split(";").collect();
-            code_to_name.insert(parts[1].to_string(), parts[0].to_string());
-            name_to_code.insert(parts[0].to_string(), parts[1].to_string());
-        }
+    for line in content.lines() {
+        let parts: Vec<&str> = line.split(';').collect();
+        if parts.len() < 2 { continue; }
+        code_to_name.insert(parts[1].to_string(), parts[0].to_string());
+        name_to_code.insert(parts[0].to_string(), parts[1].to_string());
     }
-    CountriesMap {
-        name_to_code,
-        code_to_name,
-    }
+    CountriesMap { name_to_code, code_to_name }
 }
 
 #[cfg(test)]

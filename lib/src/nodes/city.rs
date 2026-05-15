@@ -230,37 +230,25 @@ pub type CountryCities = HashMap<String, CitiesMap>;
 /// let states = geo_rs::nodes::read_states();
 /// ```
 pub fn read_cities() -> HashMap<String, CitiesMap> {
+    static US_CITIES: &str = include_str!("../data/US/cities.txt");
+    static CA_CITIES: &str = include_str!("../data/CA/cities.txt");
+
     let mut data: HashMap<String, CitiesMap> = HashMap::new();
-    for country in ["US", "CA"].iter() {
-        let filename = format!("{}/{}.txt", &country, "cities");
+    for (country, content) in [("US", US_CITIES), ("CA", CA_CITIES)] {
         let mut cities_by_state: HashMap<String, Vec<String>> = HashMap::new();
         let mut state_of_city: HashMap<String, String> = HashMap::new();
-        for line in utils::read_lines(&filename) {
-            if let Ok(s) = line {
-                let parts: Vec<&str> = s.split(";").collect();
-                if parts[1].len() <= 3 {
-                    continue;
-                }
-                match cities_by_state.get_mut(parts[0]) {
-                    Some(state_cities) => {
-                        state_cities.push(parts[1].to_lowercase().to_string());
-                    }
-                    None => {
-                        cities_by_state.insert(
-                            parts[0].to_string(),
-                            vec![parts[1].to_lowercase().to_string()],
-                        );
-                    }
-                }
-                state_of_city.insert(parts[1].to_string(), parts[0].to_string());
-            }
+        for line in content.lines() {
+            let parts: Vec<&str> = line.split(';').collect();
+            if parts.len() < 2 || parts[1].len() <= 3 { continue; }
+            cities_by_state
+                .entry(parts[0].to_string())
+                .or_default()
+                .push(parts[1].to_lowercase());
+            state_of_city.insert(parts[1].to_string(), parts[0].to_string());
         }
         data.insert(
             country.to_string(),
-            CitiesMap {
-                cities_by_state,
-                state_of_city,
-            },
+            CitiesMap { cities_by_state, state_of_city },
         );
     }
     data
