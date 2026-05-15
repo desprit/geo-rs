@@ -110,7 +110,7 @@ impl Parser {
                 }
                 "S" => {
                     location.state = Some(State {
-                        name: String::from("Saskatchewen"),
+                        name: String::from("Saskatchewan"),
                         code: String::from("SK"),
                     })
                 }
@@ -220,6 +220,16 @@ mod tests {
         let mut location = String::from("Montreal, QC J5M 0G3");
         parser.remove_zipcode(&zipcode, &mut location);
         assert_eq!(location, String::from("Montreal, QC"));
+    }
+
+    #[test]
+    fn test_ca_s_prefix_state_name() {
+        let parser = Parser::new();
+        let mut location = Location {
+            city: None, state: None, country: None, zipcode: None, address: None,
+        };
+        parser.fill_zipcode(&mut location, "Saskatoon, S7K 1J5");
+        assert_eq!(location.state.unwrap().name, "Saskatchewan");
     }
 
     #[test]
