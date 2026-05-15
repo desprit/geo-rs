@@ -84,10 +84,17 @@ impl Parser {
             location.country = Some(UNITED_STATES.clone());
             return;
         }
+        // "CA" is ambiguous: it's both the ISO country code for Canada and the USPS state
+        // abbreviation for California. Disambiguation runs three heuristic checks in order;
+        // the first match wins and returns early.
         if parts.contains(&"ca") {
+            // `ca_states` holds Canadian provinces — used by checks 1 and 2.
             let ca_states = self.states.get("CA").unwrap();
             let codes: Vec<&String> = ca_states.code_to_name.keys().collect();
             let names: Vec<&String> = ca_states.name_to_code.keys().collect();
+
+            // Check 1: Another token is a Canadian province code (e.g. "ON", "BC", "QC").
+            // Example: "Toronto, ON, CA" → "ON" resolves "CA" as Canada.
             if parts
                 .iter()
                 .find(|x| codes.contains(&&x.to_uppercase()))
@@ -96,6 +103,8 @@ impl Parser {
                 location.country = Some(CANADA.clone());
                 return;
             }
+
+            // Check 2: Another token is a Canadian province name (e.g. "Ontario", "British Columbia").
             if parts
                 .iter()
                 .find(|x| names.contains(&&x.to_string()))
@@ -104,6 +113,11 @@ impl Parser {
                 location.country = Some(CANADA.clone());
                 return;
             }
+
+            // Check 3: A token matches a California city that is NOT also a Canadian city.
+            // If found, "CA" is a US state abbreviation, not a country code — return without
+            // setting country so the downstream state-detection logic can handle it.
+            // Failing all three checks causes fall-through to the bare "CA" → Canada default below.
             let ca_cities: Vec<&String> = self
                 .cities
                 .get("CA")
@@ -132,6 +146,7 @@ impl Parser {
                 return;
             }
         }
+        // Fallback: bare "CA" with no disambiguating signal → treat as Canada.
         if input.contains("US") {
             location.country = Some(UNITED_STATES.clone());
         }
