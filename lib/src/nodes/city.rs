@@ -108,26 +108,27 @@ impl Parser {
             };
             if let Some(country_cities) = &self.cities.get(&c.code) {
                 let mut candidates: Vec<(String, String)> = vec![];
-                // Search for a full match (when input consists of just a city)
-                for s in &state_codes {
-                    if let Some(state_cities) = country_cities.cities_by_state.get(*s) {
-                        if state_cities.contains(&input_first_word.to_string()) {
-                            candidates.push((s.to_string(), input_first_word.clone()))
+
+                // O(1) exact match: look up the first input word in the city_to_states index.
+                // city_to_states keys are lowercase; input_first_word is also lowercase.
+                if let Some(states_for_city) = country_cities.city_to_states.get(&input_first_word) {
+                    for state_code in states_for_city {
+                        if state_codes.iter().any(|s| s.as_str() == state_code.as_str()) {
+                            candidates.push((state_code.to_string(), input_first_word.clone()));
                         }
                     }
                 }
-                if candidates.len() == 0 {
-                    // Search for a partly match (when input consists of a city and some other stuff)
+
+                if candidates.is_empty() {
+                    // Partial match fallback: all words of the city appear somewhere in input.
+                    // O(n) over all cities in the state; only runs when exact match fails.
                     for s in state_codes {
                         if let Some(state_cities) = country_cities.cities_by_state.get(s) {
                             for city in state_cities {
                                 let input_lowercase = input.to_lowercase();
                                 let parts_city: Vec<&str> = utils::split(city);
                                 let parts_input: Vec<&str> = utils::split(&input_lowercase);
-                                if parts_city
-                                    .iter()
-                                    .all(|p| parts_input.to_owned().contains(&p))
-                                {
+                                if parts_city.iter().all(|p| parts_input.contains(p)) {
                                     candidates.push((s.to_string(), city.to_string()))
                                 }
                             }
@@ -206,14 +207,16 @@ impl Parser {
 #[derive(Debug)]
 pub struct CitiesMap {
     pub cities_by_state: HashMap<String, Vec<String>>,
-    pub state_of_city: HashMap<String, String>,
+    // Maps city_name (lowercase) → all state codes that contain it.
+    // Enables O(1) exact-match lookup; replaces the old state_of_city map.
+    pub city_to_states: HashMap<String, Vec<String>>,
 }
 
 impl Default for CitiesMap {
     fn default() -> Self {
         CitiesMap {
             cities_by_state: HashMap::new(),
-            state_of_city: HashMap::new(),
+            city_to_states: HashMap::new(),
         }
     }
 }
@@ -236,20 +239,22 @@ pub fn read_cities() -> HashMap<String, CitiesMap> {
     let mut data: HashMap<String, CitiesMap> = HashMap::new();
     for (country, content) in [("US", US_CITIES), ("CA", CA_CITIES)] {
         let mut cities_by_state: HashMap<String, Vec<String>> = HashMap::new();
-        let mut state_of_city: HashMap<String, String> = HashMap::new();
+        let mut city_to_states: HashMap<String, Vec<String>> = HashMap::new();
         for line in content.lines() {
             let parts: Vec<&str> = line.split(';').collect();
             if parts.len() < 2 || parts[1].len() <= 3 { continue; }
+            let state_code = parts[0].to_string();
+            let city_lower = parts[1].to_lowercase();
             cities_by_state
-                .entry(parts[0].to_string())
+                .entry(state_code.clone())
                 .or_default()
-                .push(parts[1].to_lowercase());
-            state_of_city.insert(parts[1].to_string(), parts[0].to_string());
+                .push(city_lower.clone());
+            city_to_states
+                .entry(city_lower)
+                .or_default()
+                .push(state_code);
         }
-        data.insert(
-            country.to_string(),
-            CitiesMap { cities_by_state, state_of_city },
-        );
+        data.insert(country.to_string(), CitiesMap { cities_by_state, city_to_states });
     }
     data
 }
@@ -261,14 +266,18 @@ mod tests {
 
     #[test]
     fn test_read_cities() {
-        let cities = super::read_cities();
+        let cities = read_cities();
         assert!(cities.get("US").is_some());
         assert!(cities.get("CA").is_some());
         let us_cities = cities.get("US").unwrap();
-        assert!(us_cities.state_of_city.get("New York").is_some());
+        // city_to_states keys are lowercase
+        assert!(us_cities.city_to_states.get("new york").is_some());
+        // multi-state city maps to a Vec of state codes
+        let ny_states = us_cities.city_to_states.get("new york").unwrap();
+        assert!(ny_states.contains(&"NY".to_string()));
         let ca_cities = cities.get("CA").unwrap();
         assert!(ca_cities.cities_by_state.get("ON").is_some());
-        assert!(ca_cities.state_of_city.get("Toronto").is_some());
+        assert!(ca_cities.city_to_states.get("toronto").is_some());
         let ca_state_cities = ca_cities.cities_by_state.get("ON").unwrap();
         assert!(ca_state_cities.contains(&"toronto".to_string()));
         let us_state_cities = us_cities.cities_by_state.get("NY").unwrap();
@@ -340,6 +349,32 @@ mod tests {
             parser.fill_city(&mut location, input_string.as_str());
             assert_eq!(location.city, output.0, "input: {}", input);
         }
+    }
+
+    /// cargo test benchmark_fill_city -- --nocapture --ignored
+    #[test]
+    #[ignore]
+    fn benchmark_fill_city() {
+        let n = 250;
+        let parser = Parser::new();
+        let before = std::time::Instant::now();
+        for _ in 0..n {
+            for (input, output) in mocks::get_mocks() {
+                let mut location = Location {
+                    city: None,
+                    state: output.1,
+                    country: output.2,
+                    zipcode: None,
+                    address: None,
+                };
+                parser.fill_city(&mut location, input);
+            }
+        }
+        println!(
+            "Elapsed time: {:.2?}, {:.2?} each",
+            before.elapsed(),
+            before.elapsed() / (n * mocks::get_mocks().len() as u32)
+        );
     }
 
     #[test]
