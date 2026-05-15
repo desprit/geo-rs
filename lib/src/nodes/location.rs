@@ -1,10 +1,8 @@
 use super::{Address, City, Country, State, Zipcode};
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::LazyLock;
 
-lazy_static! {
-    static ref COMMAS: Regex = Regex::new(r"(, ){2,5}").unwrap();
-}
+static COMMAS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(, ){2,5}").unwrap());
 
 #[derive(Debug, Clone, Hash, Eq)]
 pub struct Location {

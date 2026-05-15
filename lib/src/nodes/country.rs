@@ -1,9 +1,9 @@
 use super::Location;
 use crate::utils;
 use crate::Parser;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Hash, Eq)]
 pub struct Country {
@@ -11,16 +11,14 @@ pub struct Country {
     pub code: String,
 }
 
-lazy_static! {
-    pub static ref UNITED_STATES: Country = Country {
-        code: String::from("US"),
-        name: String::from("United States"),
-    };
-    pub static ref CANADA: Country = Country {
-        code: String::from("CA"),
-        name: String::from("Canada"),
-    };
-}
+pub static UNITED_STATES: LazyLock<Country> = LazyLock::new(|| Country {
+    code: String::from("US"),
+    name: String::from("United States"),
+});
+pub static CANADA: LazyLock<Country> = LazyLock::new(|| Country {
+    code: String::from("CA"),
+    name: String::from("Canada"),
+});
 
 impl PartialEq for Country {
     fn eq(&self, other: &Country) -> bool {

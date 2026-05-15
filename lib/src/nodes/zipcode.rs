@@ -1,17 +1,17 @@
 use super::{Location, State, CANADA};
 use crate::utils;
 use crate::Parser;
-use lazy_static::lazy_static;
 use regex::Regex;
 use std::fmt;
+use std::sync::LazyLock;
 
-lazy_static! {
-    static ref US_PATTERN: Regex = Regex::new(r"\d{5}(?:[-\s]\d{4})?").unwrap();
-    static ref CA_PATTERN: Regex = Regex::new(
-        r"[ABCEGHJKLMNPRSTVXY][0-9][ABCEGHJKLMNPRSTVWXYZ] ?[0-9][ABCEGHJKLMNPRSTVWXYZ][0-9]"
+static US_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\d{5}(?:[-\s]\d{4})?").unwrap());
+static CA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"[ABCEGHJKLMNPRSTVXY][0-9][ABCEGHJKLMNPRSTVWXYZ] ?[0-9][ABCEGHJKLMNPRSTVWXYZ][0-9]",
     )
-    .unwrap();
-}
+    .unwrap()
+});
 
 #[derive(Debug, Clone, Hash, Eq)]
 pub struct Zipcode {

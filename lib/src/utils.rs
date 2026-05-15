@@ -1,19 +1,18 @@
 use crate::{Country, Location};
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::LazyLock;
 use unidecode::unidecode;
 
-lazy_static! {
-    static ref RE_BRACKETS: Regex = Regex::new(r"\(.*?\)").unwrap();
-    static ref RE_LEADING: Regex = Regex::new(r"^[\s\-,;:_\.\?!/]*").unwrap();
-    static ref RE_TRAILING: Regex = Regex::new(r"[\s\-,;:_\.\?!/]*$").unwrap();
-    static ref RE_SPLITTER1: Regex = Regex::new(r"[^a-z\p{L}A-Z0-9\s-]").unwrap();
-    static ref RE_SPLITTER2: Regex = Regex::new(r"[^a-z\p{L}A-Z0-9]").unwrap();
-    static ref RE_SPACES: Regex = Regex::new(r"\s+").unwrap();
-    static ref RE_ABBREVIATIONS: Regex =
-        Regex::new(r"\b(?:[QWRTPSDFGHKLZXCVBNM]{3,5}\b|(?:[A-Za-z]\.){3,})\s*").unwrap();
-}
+static RE_BRACKETS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(.*?\)").unwrap());
+static RE_LEADING: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[\s\-,;:_\.\?!/]*").unwrap());
+static RE_TRAILING: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[\s\-,;:_\.\?!/]*$").unwrap());
+static RE_SPLITTER1: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-z\p{L}A-Z0-9\s-]").unwrap());
+static RE_SPLITTER2: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-z\p{L}A-Z0-9]").unwrap());
+static RE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
+static RE_ABBREVIATIONS: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\b(?:[QWRTPSDFGHKLZXCVBNM]{3,5}\b|(?:[A-Za-z]\.){3,})\s*").unwrap()
+});
 
 /// Remove useless garbage from the given string, e.g. trailing commas, values in brackets, etc.
 ///
