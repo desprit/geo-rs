@@ -1,6 +1,7 @@
 use super::Location;
 use crate::utils;
 use crate::Parser;
+use aho_corasick::AhoCorasick;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::LazyLock;
@@ -36,6 +37,10 @@ impl fmt::Display for Country {
 pub struct CountriesMap {
     pub code_to_name: HashMap<String, String>,
     pub name_to_code: HashMap<String, String>,
+    // Aho-Corasick for single-pass country name detection.
+    // name_patterns[i] = (country_code, lowercase_name).
+    pub name_ac: AhoCorasick,
+    pub name_patterns: Vec<(String, String)>,
 }
 
 impl Parser {
@@ -68,7 +73,7 @@ impl Parser {
         if location.country.is_some() {
             return;
         }
-        let as_lowercase = input.to_lowercase().to_string();
+        let as_lowercase = input.to_lowercase();
         let parts = utils::split(&as_lowercase);
         for part in &parts {
             if vec!["usa", "us"].contains(&part) {
@@ -153,38 +158,35 @@ impl Parser {
         if input.contains("CA") {
             location.country = Some(CANADA.clone());
         }
-        // Search fill country name in the input string, ignore country if code is also US or CA state,
-        // For example, ignore country code PA (Panama) because it's also Pennsylvania
-        for (country_name, country_code) in self.countries.name_to_code.iter() {
-            if utils::split(&as_lowercase.to_string())
-                .contains(&country_name.to_lowercase().as_str())
-            {
-                if let Some(us_states) = self.states.get("US") {
-                    if us_states
-                        .name_to_code
-                        .keys()
-                        .find(|name| name == &country_name)
-                        .is_some()
-                    {
-                        continue;
-                    }
-                }
-                if let Some(ca_states) = self.states.get("CA") {
-                    if ca_states
-                        .name_to_code
-                        .keys()
-                        .find(|name| name == &country_name)
-                        .is_some()
-                    {
-                        continue;
-                    }
-                }
-                location.country = Some(Country {
-                    name: String::from(country_name),
-                    code: String::from(country_code),
-                });
-                return;
+        // Search country name in the input — single AC pass with word-boundary verification
+        for mat in self.countries.name_ac.find_iter(as_lowercase.as_str()) {
+            let (country_code, name_lower) = &self.countries.name_patterns[mat.pattern().as_usize()];
+            // Verify the match falls on a word boundary (non-alphanumeric surroundings)
+            let start = mat.start();
+            let end = mat.end();
+            let bytes = as_lowercase.as_bytes();
+            let before_ok = start == 0 || !bytes[start - 1].is_ascii_alphanumeric();
+            let after_ok = end >= bytes.len() || !bytes[end].is_ascii_alphanumeric();
+            if !before_ok || !after_ok {
+                continue;
             }
+            // Skip if the country name is also a US or CA state name
+            if let Some(us_states) = self.states.get("US") {
+                if us_states.name_lower_set.contains(name_lower.as_str()) {
+                    continue;
+                }
+            }
+            if let Some(ca_states) = self.states.get("CA") {
+                if ca_states.name_lower_set.contains(name_lower.as_str()) {
+                    continue;
+                }
+            }
+            let country_name = self.countries.code_to_name.get(country_code).unwrap().clone();
+            location.country = Some(Country {
+                name: country_name,
+                code: country_code.clone(),
+            });
+            return;
         }
         // Search country code in the input string, ignore country if code is also US or CA state,
         // For example, ignore country code PA (Panama) because it's also Pennsylvania
@@ -269,13 +271,19 @@ pub fn read_countries() -> CountriesMap {
     let content = include_str!("../data/countries.txt");
     let mut name_to_code: HashMap<String, String> = HashMap::new();
     let mut code_to_name: HashMap<String, String> = HashMap::new();
+    let mut name_patterns: Vec<(String, String)> = Vec::new();
     for line in content.lines() {
         let parts: Vec<&str> = line.split(';').collect();
         if parts.len() < 2 { continue; }
-        code_to_name.insert(parts[1].to_string(), parts[0].to_string());
-        name_to_code.insert(parts[0].to_string(), parts[1].to_string());
+        let name = parts[0].to_string();
+        let code = parts[1].to_string();
+        name_patterns.push((code.clone(), name.to_lowercase()));
+        code_to_name.insert(code.clone(), name.clone());
+        name_to_code.insert(name, code);
     }
-    CountriesMap { name_to_code, code_to_name }
+    let ac_patterns: Vec<&str> = name_patterns.iter().map(|(_, n)| n.as_str()).collect();
+    let name_ac = AhoCorasick::new(&ac_patterns).expect("failed to build country name AC automaton");
+    CountriesMap { name_to_code, code_to_name, name_ac, name_patterns }
 }
 
 #[cfg(test)]
@@ -330,6 +338,17 @@ mod tests {
         let mut location = String::from("Barcelona, ES");
         parser.remove_country(&country, &mut location);
         assert_eq!(location, String::from("Barcelona"));
+    }
+
+    #[test]
+    fn test_countries_map_has_ac() {
+        let countries = read_countries();
+        let mut found_spain = false;
+        for mat in countries.name_ac.find_iter("barcelona spain es") {
+            let (_, name_lower) = &countries.name_patterns[mat.pattern().as_usize()];
+            if name_lower == "spain" { found_spain = true; }
+        }
+        assert!(found_spain, "AC should find Spain in the input");
     }
 
     /// cargo test benchmark_fill_country -- --nocapture --ignored
