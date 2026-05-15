@@ -1,6 +1,7 @@
 use super::{Country, Location, CANADA, UNITED_STATES};
 use crate::nodes::CitiesMap;
 use crate::{utils, Parser};
+use aho_corasick::AhoCorasick;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
@@ -64,26 +65,24 @@ impl Parser {
             None => vec![UNITED_STATES.clone(), CANADA.clone()],
         };
 
-        // Search by a full match of input and state name
+        // Search by a full match of input and state name — single AC pass, O(input_len)
         for c in &countries {
             let default = CitiesMap::default();
             let country_cities = self.cities.get(&c.code).unwrap_or(&default);
             if let Some(states) = self.states.get(&c.code) {
-                for (code, name) in &states.code_to_name {
-                    // check if state name isn't a city
-                    if country_cities.city_names_set.contains(&name.to_lowercase()) {
+                for mat in states.name_ac.find_iter(as_lowercase.as_str()) {
+                    let (code, name_lower) = &states.name_patterns[mat.pattern().as_usize()];
+                    if country_cities.city_names_set.contains(name_lower.as_str()) {
                         continue;
                     }
-                    if as_lowercase.contains(&name.to_lowercase()) {
-                        location.state = Some(State {
-                            code: code.clone(),
-                            name: name.clone(),
-                        });
-                        if location.country.is_none() {
-                            location.country = Some(c.clone());
-                        }
-                        return;
+                    location.state = Some(State {
+                        code: code.clone(),
+                        name: states.code_to_name.get(code).unwrap().clone(),
+                    });
+                    if location.country.is_none() {
+                        location.country = Some(c.clone());
                     }
+                    return;
                 }
             }
         }
@@ -366,6 +365,10 @@ pub struct StatesMap {
     pub code_to_name_lower: HashMap<String, String>,
     // all lowercase state names, for O(1) lookup
     pub name_lower_set: HashSet<String>,
+    // Aho-Corasick automaton for single-pass state name detection.
+    // name_patterns[i] = (uppercase_code, lowercase_name); AC pattern index i matches name_patterns[i].
+    pub name_ac: AhoCorasick,
+    pub name_patterns: Vec<(String, String)>,
 }
 
 pub type CountryStates = HashMap<String, StatesMap>;
@@ -389,6 +392,7 @@ pub fn read_states() -> HashMap<String, StatesMap> {
         let mut code_to_name: HashMap<String, String> = HashMap::new();
         let mut code_to_name_lower: HashMap<String, String> = HashMap::new();
         let mut name_lower_set: HashSet<String> = HashSet::new();
+        let mut name_patterns: Vec<(String, String)> = Vec::new();
         for line in content.lines() {
             let parts: Vec<&str> = line.split(';').collect();
             if parts.len() < 2 { continue; }
@@ -396,12 +400,15 @@ pub fn read_states() -> HashMap<String, StatesMap> {
             let name = parts[1].to_string();
             let name_lower = name.to_lowercase();
             code_to_name_lower.insert(code.clone(), name_lower.clone());
-            name_lower_set.insert(name_lower);
+            name_lower_set.insert(name_lower.clone());
+            name_patterns.push((code.clone(), name_lower));
             name_to_code.insert(name.clone(), code.clone());
             code_to_name.insert(code, name);
         }
+        let ac_patterns: Vec<&str> = name_patterns.iter().map(|(_, n)| n.as_str()).collect();
+        let name_ac = AhoCorasick::new(&ac_patterns).expect("failed to build state name AC automaton");
         data.insert(country.to_string(), StatesMap {
-            name_to_code, code_to_name, code_to_name_lower, name_lower_set,
+            name_to_code, code_to_name, code_to_name_lower, name_lower_set, name_ac, name_patterns,
         });
     }
     data
@@ -560,6 +567,19 @@ mod tests {
         };
         parser.fill_country_from_state(&mut location);
         assert_eq!(location.country.unwrap(), CANADA.clone());
+    }
+
+    #[test]
+    fn test_states_map_has_ac() {
+        let states = read_states();
+        let us = states.get("US").unwrap();
+        // AC should find "california" in a test string
+        let mut found = false;
+        for mat in us.name_ac.find_iter("location in california somewhere") {
+            let (code, _) = &us.name_patterns[mat.pattern().as_usize()];
+            if code == "CA" { found = true; }
+        }
+        assert!(found, "AC should find California in the input string");
     }
 
     #[test]
