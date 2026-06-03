@@ -193,6 +193,11 @@ mod tests {
             "Sherwood Park, AB, CA, T8A3H9",
         );
         locations.insert("Barcelona, Barcelona, ES, 08029", "Barcelona, ES, 08029");
+        locations.insert("Alice Springs", "Alice Springs");
+        locations.insert(
+            "Alice Springs, Northern Territory, Australia, 0870, 123 Main Street",
+            "Alice Springs, AU",
+        );
         let parser = super::Parser::new();
         for (k, v) in locations {
             let output = parser.parse_location(&k);

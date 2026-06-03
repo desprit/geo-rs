@@ -179,7 +179,15 @@ impl Parser {
                                 ranged_candidates.insert(0, candidate.clone());
                                 break;
                             }
-                            ranged_candidates.push(candidate.clone());
+                            // Only accept a weakly-matched candidate when there is some
+                            // corroboration: an exact first-segment match, a state token
+                            // present in the input, or a state already detected upstream.
+                            // Without any of these, a partial subset match (e.g. city
+                            // "Alice" for input "Alice Springs") is a false positive — skip
+                            // it so the original segment is preserved downstream.
+                            if city_full_match || state_match || location.state.is_some() {
+                                ranged_candidates.push(candidate.clone());
+                            }
                         }
                     }
                 }
